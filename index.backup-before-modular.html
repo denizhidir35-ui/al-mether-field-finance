@@ -1,0 +1,175 @@
+﻿<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AL Mether Field Finance</title>
+  <style>
+    *{box-sizing:border-box}
+    :root{
+      --bg:#050814;--panel:rgba(12,20,38,.76);--panel2:rgba(15,23,42,.82);
+      --line:rgba(148,163,184,.18);--text:#e5e7eb;--muted:#94a3b8;
+      --blue:#2563eb;--violet:#4f46e5;--green:#22c55e;--red:#fb7185;--yellow:#facc15;
+    }
+    body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    body:before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 20% 10%,rgba(37,99,235,.22),transparent 35%),linear-gradient(rgba(5,8,20,.90),rgba(5,8,20,.97)),url("mether-bg.jpeg") center/cover no-repeat;z-index:-3}
+    .glass{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(18px);box-shadow:0 18px 60px #0008;border-radius:24px}
+    button{border:0;border-radius:14px;padding:12px 14px;background:linear-gradient(135deg,var(--blue),var(--violet));color:white;font-weight:900;cursor:pointer}
+    .danger{background:#dc2626}.ghost{background:var(--panel2)}.doc{background:#7c3aed}
+    input,select{width:100%;padding:12px;border-radius:14px;background:rgba(3,7,18,.88);border:1px solid rgba(148,163,184,.25);color:white}
+    .small{font-size:12px;color:var(--muted)}.good{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--yellow)}
+    .login{min-height:100vh;display:grid;place-items:center;padding:18px}.loginBox{width:100%;max-width:430px;padding:24px}.loginBox h1{margin:0;font-size:30px}.welcome{font-size:18px;color:#a5b4fc;margin:8px 0}.form{display:grid;gap:10px;margin-top:14px}
+    .app{display:none}.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    .side{padding:18px;border-right:1px solid var(--line);background:rgba(5,8,20,.35);backdrop-filter:blur(10px);position:sticky;top:0;height:100vh}
+    .sideLogo{text-align:center;margin-bottom:20px}.sideLogo img{width:145px;border-radius:24px;opacity:.92;box-shadow:0 0 38px rgba(96,165,250,.24)}
+    .sideLogoText{font-size:22px;font-weight:950;letter-spacing:2px;margin-top:8px}.tag{color:var(--muted);font-size:12px;margin:5px 0 22px}
+    .nav button{display:block;width:100%;text-align:left;margin:8px 0;background:var(--panel2);border:1px solid var(--line)}.nav button.active{background:linear-gradient(135deg,var(--blue),var(--violet))}
+    .main{padding:18px;max-width:1500px;width:100%;margin:auto;padding-bottom:95px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:16px;margin-bottom:14px}.brand h1{margin:0;font-size:24px}.brand p{margin:5px 0 0;color:var(--muted)}.topActions{display:flex;gap:8px;flex-wrap:wrap}
+    .screen{display:none}.screen.active{display:block}
+    .mainSummary,.kpis,.report,.moduleSummary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.mainSummary{grid-template-columns:1.2fr 1fr 1fr 1fr;margin-bottom:14px}
+    .kpi,.moduleCard,.panel{padding:16px}.panel{margin-top:14px}.panel h2{margin:0 0 12px}.kpi b{font-size:12px;color:#a7b4c8}.kpi div{font-size:22px;font-weight:950;margin-top:7px}.balanceCard div{font-size:30px!important}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.list{display:grid;gap:9px}
+    .item{display:grid;grid-template-columns:95px 1fr auto auto;gap:10px;align-items:center;padding:11px;border-radius:16px;background:rgba(15,23,42,.72);border:1px solid var(--line)}
+    .pill{font-size:12px;padding:6px 10px;border-radius:99px;background:rgba(30,41,59,.9)}
+    .moduleCard b{display:block;margin-bottom:8px}.moduleCard span{display:block;color:var(--muted);font-size:12px;margin-bottom:10px}.moduleCard button{width:100%;padding:10px;font-size:12px}
+    .mobileTab{display:none}
+    @media(max-width:900px){
+      .layout{display:block}.side{display:none}.main{padding:10px;padding-bottom:88px}.topbar{display:block}.topActions{margin-top:12px}
+      .mainSummary,.kpis,.report,.moduleSummary,.grid2{grid-template-columns:1fr}.item{grid-template-columns:1fr}.brand h1{font-size:22px}
+      .moduleCard span{display:none}.panel{margin-top:8px;padding:14px}
+      .mobileTab{position:fixed;left:10px;right:10px;bottom:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:8px;background:rgba(12,20,38,.92);border:1px solid var(--line);backdrop-filter:blur(18px);border-radius:24px;z-index:10}
+      .mobileTab button{padding:10px 5px;font-size:11px;background:var(--panel2)}.mobileTab button.active{background:linear-gradient(135deg,var(--blue),var(--violet))}
+    }
+  </style>
+</head>
+<body>
+  <div id="login" class="login">
+    <div class="loginBox glass">
+      <h1>Hoş geldiniz</h1>
+      <div class="welcome">AL Mether Field Finance</div>
+      <p class="small">CEO / Founder finans kontrol ekranı</p>
+      <div class="form">
+        <input id="loginMail" placeholder="Mail adresi">
+        <input id="loginPass" type="password" placeholder="Şifre">
+        <button onclick="App.auth.login()">Giriş Yap</button>
+      </div>
+      <p class="small">Demo kullanıcı: denizhidir35@gmail.com / 1234</p>
+    </div>
+  </div>
+
+  <div id="app" class="app">
+    <div class="layout">
+      <aside class="side">
+        <div class="sideLogo"><img src="mether-bg.jpeg"><div class="sideLogoText">METHER</div></div>
+        <div class="tag">Field Finance • CFO Core V1.1</div>
+        <div class="nav" id="sideNav"></div>
+      </aside>
+
+      <main class="main">
+        <div class="topbar glass">
+          <div class="brand"><h1 id="title">Ana Özet</h1><p id="sub">Mobil ve PC için sade finans kontrol ekranı</p></div>
+          <div class="topActions">
+            <button class="ghost" onclick="App.backup()">Yedek Al</button>
+            <button class="danger" onclick="App.auth.logout()">Çıkış</button>
+          </div>
+        </div>
+
+        <section id="home" class="screen active"><div id="homeSummary" class="mainSummary"></div><div class="glass panel"><h2>Tüm Modül Özetleri</h2><div id="moduleSummary" class="moduleSummary"></div></div><div class="glass panel"><h2>Özet Rapor</h2><div id="homeReport" class="report"></div></div><div class="glass panel"><h2>Son Hareketler</h2><div id="homeMoves" class="list"></div></div></section>
+        <section id="finance" class="screen"><div class="glass panel"><h2>Finans / Bakiye</h2><div class="form"><input id="start" type="number" placeholder="Başlangıç bakiyesi" oninput="App.saveStart()"></div></div><div id="financeCards" class="kpis"></div></section>
+        <section id="income" class="screen"><div class="glass panel"><h2>Gelir / Hakediş Kalemleri</h2><div class="form"><input id="iDate" type="date"><select id="iType"><option>Bina giriş işi</option><option>Sokak işi</option><option>Arıza tespit</option><option>Ek iş</option></select><input id="iDesc" placeholder="Açıklama"><input id="iQty" type="number" placeholder="Bina / adet"><input id="iPrice" type="number" placeholder="Birim fiyat"><input id="iVat" type="number" value="20" placeholder="KDV %"><select id="iStatus"><option>Tahsil edildi</option><option>Bekliyor</option></select><button onclick="App.addIncome()">Gelir Ekle</button></div></div><div class="glass panel"><h2>Gelir Listesi</h2><div id="incomeList" class="list"></div></div></section>
+        <section id="expense" class="screen"><div class="glass panel"><h2>Gider + Fatura Kalemleri</h2><div class="form"><input id="eDate" type="date"><select id="eCat"><option>Personel</option><option>Araç</option><option>Yakıt</option><option>Ekipman</option><option>Demirbaş</option><option>Muhasebe</option><option>Vergi</option><option>Yemek</option><option>Yol</option><option>Sarf malzeme</option><option>Banka masrafı</option><option>Diğer</option></select><input id="eDesc" placeholder="Açıklama"><input id="eAmount" type="number" placeholder="Tutar"><select id="eStatus"><option>Ödendi</option><option>Bekliyor</option></select><input id="eFile" type="file" accept="image/*,.pdf" capture="environment"><button onclick="App.addExpense()">Gider Ekle + Belge Kaydet</button></div></div><div class="glass panel"><h2>Gider Listesi</h2><div id="expenseList" class="list"></div></div></section>
+        <section id="people" class="screen"><div class="grid2"><div class="glass panel"><h2>Personel</h2><div class="form"><input id="pName" placeholder="Personel ad soyad"><input id="pRole" placeholder="Görev"><input id="pCost" type="number" placeholder="Aylık toplam maliyet"><button onclick="App.addPerson()">Personel Ekle</button></div></div><div class="glass panel"><h2>Demirbaş</h2><div class="form"><input id="aName" placeholder="Demirbaş adı"><input id="aPrice" type="number" placeholder="Fiyat"><input id="aWho" placeholder="Kime verildi"><button onclick="App.addAsset()">Demirbaş Ekle</button></div></div></div><div class="glass panel"><h2>Personel / Demirbaş Listesi</h2><div id="peopleList" class="list"></div></div></section>
+        <section id="docs" class="screen"><div class="glass panel"><h2>Belge Kasası</h2><p class="small">Gider ekranında eklenen fatura, PDF veya fotoğraflar burada görünür.</p><div id="docsList" class="list"></div></div></section>
+        <section id="workshop" class="screen"><div class="glass panel"><h2>Workshop / İş Takibi</h2><p class="small">Sonraki adım: iş emirleri, saha ekibi, araç, fotoğraf ve teslim takibi burada olacak.</p></div></section>
+        <section id="reports" class="screen"><div class="glass panel"><h2>Raporlar</h2><div id="reportCards" class="report"></div></div></section>
+        <section id="settings" class="screen"><div class="glass panel"><h2>Ayarlar</h2><p class="small">Supabase, kullanıcı yetkileri, şirket ayarları ve AI CFO bağlantısı burada büyüyecek.</p><button class="ghost" onclick="App.backup()">Yedek Al</button></div></section>
+      </main>
+    </div>
+    <div class="mobileTab" id="mobileNav"></div>
+  </div>
+
+<script>
+const App=(()=>{
+  const $=id=>document.getElementById(id);
+  const TL=n=>(Number(n)||0).toLocaleString("tr-TR",{style:"currency",currency:"TRY"});
+  const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
+  const storage={
+    get(k,d=[]){try{return JSON.parse(localStorage.getItem("am_"+k))??d}catch{return d}},
+    set(k,v){localStorage.setItem("am_"+k,JSON.stringify(v))}
+  };
+  const users=[{name:"Deniz Bey",mail:"denizhidir35@gmail.com",pass:"1234",role:"CEO"},{name:"Aytaç Bey",mail:"aytacturkbay@gmail.com",pass:"1234",role:"Partner"}];
+  const modules=[
+    ["home","🏠 Ana Özet","Mobil ve PC için sade finans kontrol ekranı"],
+    ["finance","💰 Finans","Ana bakiye, gelir özeti, gider özeti ve bekleyenler"],
+    ["income","🟢 Gelir","Gelir ve hakediş kalemleri"],
+    ["expense","🔴 Gider + Fatura","Gider kalemleri ve fatura belge kaydı"],
+    ["people","👷 Personel / Demirbaş","Personel maliyeti ve demirbaş takibi"],
+    ["docs","📁 Belgeler","Fatura, PDF ve belge kasası"],
+    ["workshop","🛠️ Workshop","İş emri ve saha takip merkezi"],
+    ["reports","📊 Raporlar","Finans ve operasyon raporları"],
+    ["settings","⚙️ Ayarlar","Kullanıcı ve sistem ayarları"]
+  ];
+  let state={incomes:storage.get("incomes"),expenses:storage.get("expenses"),people:storage.get("people"),assets:storage.get("assets")};
+
+  function persist(){Object.keys(state).forEach(k=>storage.set(k,state[k]))}
+  function v(id){return $(id).value} function n(id){return Number(v(id))||0}
+  function today(){return new Date().toISOString().slice(0,10)}
+  function calc(){
+    const s=Number(localStorage.getItem("am_start"))||0;
+    const incOk=state.incomes.filter(x=>x.status==="Tahsil edildi").reduce((a,x)=>a+x.total,0);
+    const incWait=state.incomes.filter(x=>x.status==="Bekliyor").reduce((a,x)=>a+x.total,0);
+    const expOk=state.expenses.filter(x=>x.status==="Ödendi").reduce((a,x)=>a+x.amount,0);
+    const expWait=state.expenses.filter(x=>x.status==="Bekliyor").reduce((a,x)=>a+x.amount,0);
+    const p=state.people.reduce((a,x)=>a+x.cost,0);
+    const as=state.assets.reduce((a,x)=>a+x.price,0);
+    const net=s+incOk-expOk-p-as;
+    const profit=s+incOk+incWait-expOk-expWait-p-as;
+    return{s,incOk,incWait,expOk,expWait,p,as,net,profit};
+  }
+  function card(t,v,c="",extra=""){return `<div class="glass kpi ${extra}"><b>${t}</b><div class="${c}">${v}</div></div>`}
+  function item(date,title,desc,amount,cls,extra){return `<div class="item"><span class="pill">${date||"-"}</span><div><b>${title}</b><div class="small">${desc||""}</div></div><b class="${cls}">${amount}</b><div>${extra||""}</div></div>`}
+  function nav(){
+    $("sideNav").innerHTML=modules.map((m,i)=>`<button class="${i===0?"active":""}" onclick="App.go('${m[0]}',this)">${m[1]}</button>`).join("");
+    $("mobileNav").innerHTML=modules.slice(0,5).map((m,i)=>`<button class="${i===0?"active":""}" onclick="App.go('${m[0]}',this)">${m[1].replace(/^[^ ]+ /,"")}</button>`).join("");
+  }
+  function go(id,el){
+    document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");
+    document.querySelectorAll(".nav button,.mobileTab button").forEach(x=>x.classList.remove("active")); if(el)el.classList.add("active");
+    const m=modules.find(x=>x[0]===id); $("title").textContent=m[1].replace(/^[^ ]+ /,""); $("sub").textContent=m[2]; render();
+  }
+  const auth={
+    login(){const mail=v("loginMail").trim().toLowerCase(),pass=v("loginPass").trim();const u=users.find(x=>x.mail===mail&&x.pass===pass);if(!u)return alert("Mail veya şifre hatalı");localStorage.setItem("am_session",JSON.stringify(u));$("login").style.display="none";$("app").style.display="block";initApp()},
+    logout(){localStorage.removeItem("am_session");$("app").style.display="none";$("login").style.display="grid"}
+  };
+  async function fileData(file){if(!file)return null;return await new Promise(r=>{let fr=new FileReader();fr.onload=()=>r({id:uid(),name:file.name,type:file.type,data:fr.result,createdAt:new Date().toISOString()});fr.readAsDataURL(file)})}
+  async function addExpense(){let f=await fileData($("eFile").files[0]);state.expenses.unshift({id:uid(),date:v("eDate"),cat:v("eCat"),desc:v("eDesc"),amount:n("eAmount"),status:v("eStatus"),file:f,createdAt:new Date().toISOString()});persist();$("eDesc").value=$("eAmount").value="";$("eFile").value="";go("home")}
+  function addIncome(){let ara=n("iQty")*n("iPrice"),total=ara+(ara*n("iVat")/100);state.incomes.unshift({id:uid(),date:v("iDate"),type:v("iType"),desc:v("iDesc"),qty:n("iQty"),price:n("iPrice"),vat:n("iVat"),total,status:v("iStatus"),createdAt:new Date().toISOString()});persist();$("iDesc").value=$("iQty").value=$("iPrice").value="";go("home")}
+  function addPerson(){state.people.unshift({id:uid(),name:v("pName"),role:v("pRole"),cost:n("pCost"),createdAt:new Date().toISOString()});persist();$("pName").value=$("pRole").value=$("pCost").value="";go("home")}
+  function addAsset(){state.assets.unshift({id:uid(),name:v("aName"),price:n("aPrice"),who:v("aWho"),createdAt:new Date().toISOString()});persist();$("aName").value=$("aPrice").value=$("aWho").value="";go("home")}
+  function del(t,id){const map={income:"incomes",expense:"expenses",person:"people",asset:"assets"};state[map[t]]=state[map[t]].filter(x=>x.id!==id);persist();render()}
+  function doc(id){let x=state.expenses.find(e=>e.id===id),f=x?.file;if(!f)return;let w=open("");if(f.type.includes("pdf"))w.document.write(`<iframe src="${f.data}" style="width:100%;height:100vh;border:0"></iframe>`);else w.document.write(`<img src="${f.data}" style="max-width:100%"><script>setTimeout(()=>print(),500)<\/script>`)}
+  function render(){
+    const c=calc();
+    $("homeSummary").innerHTML=card("Ana Bakiye",TL(c.net),c.net>=0?"good":"bad","balanceCard")+card("Gelir Özeti",TL(c.incOk+c.incWait),"good")+card("Gider Özeti",TL(c.expOk+c.expWait+c.p+c.as),"bad")+card("Bekleyenler",TL(c.incWait-c.expWait),(c.incWait-c.expWait)>=0?"warn":"bad");
+    $("moduleSummary").innerHTML=`<div class="glass moduleCard"><b>💰 Gelir</b><span>${state.incomes.length} kayıt • ${TL(c.incOk+c.incWait)}</span><button onclick="App.go('income')">Aç</button></div><div class="glass moduleCard"><b>🔴 Gider</b><span>${state.expenses.length} kayıt • ${TL(c.expOk+c.expWait)}</span><button onclick="App.go('expense')">Aç</button></div><div class="glass moduleCard"><b>👷 Personel / Demirbaş</b><span>${state.people.length} personel • ${state.assets.length} demirbaş</span><button onclick="App.go('people')">Aç</button></div><div class="glass moduleCard"><b>📁 Belgeler</b><span>${state.expenses.filter(x=>x.file).length} belge</span><button onclick="App.go('docs')">Aç</button></div>`;
+    $("homeReport").innerHTML=card("Tahsil Edilen",TL(c.incOk),"good")+card("Bekleyen Gelir",TL(c.incWait),"warn")+card("Ödenen Gider",TL(c.expOk),"bad")+card("Bekleyen Gider",TL(c.expWait),"warn")+card("Personel",TL(c.p))+card("Demirbaş",TL(c.as))+card("Tahmini Kâr/Zarar",TL(c.profit),c.profit>=0?"good":"bad")+card("Başlangıç",TL(c.s));
+    $("financeCards").innerHTML=card("Ana Bakiye",TL(c.net),c.net>=0?"good":"bad","balanceCard")+card("Başlangıç",TL(c.s))+card("Gelir Özeti",TL(c.incOk+c.incWait),"good")+card("Gider Özeti",TL(c.expOk+c.expWait+c.p+c.as),"bad")+card("Bekleyen Tahsilat",TL(c.incWait),"warn")+card("Bekleyen Ödeme",TL(c.expWait),"warn")+card("Tahmini Kâr/Zarar",TL(c.profit),c.profit>=0?"good":"bad")+card("Demirbaş",TL(c.as));
+    const all=[...state.incomes.map(x=>({date:x.date,title:"+ "+x.type,desc:x.desc+" • "+x.status,amount:x.total,cls:"good",extra:`<button class="danger" onclick="App.del('income','${x.id}')">Sil</button>`})),...state.expenses.map(x=>({date:x.date,title:"- "+x.cat,desc:x.desc+" • "+x.status,amount:x.amount,cls:"bad",extra:`${x.file?`<button class="doc" onclick="App.doc('${x.id}')">Belge/PDF</button>`:""} <button class="danger" onclick="App.del('expense','${x.id}')">Sil</button>`})),...state.people.map(x=>({date:"Personel",title:x.name,desc:x.role,amount:x.cost,cls:"bad",extra:`<button class="danger" onclick="App.del('person','${x.id}')">Sil</button>`})),...state.assets.map(x=>({date:"Demirbaş",title:x.name,desc:x.who,amount:x.price,cls:"bad",extra:`<button class="danger" onclick="App.del('asset','${x.id}')">Sil</button>`}))].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+    $("homeMoves").innerHTML=all.slice(0,8).map(x=>item(x.date,x.title,x.desc,TL(x.amount),x.cls,x.extra)).join("")||"<p class='small'>Henüz kayıt yok.</p>";
+    $("incomeList").innerHTML=state.incomes.map(x=>item(x.date,x.type,x.desc+" • "+x.status,TL(x.total),"good",`<button class="danger" onclick="App.del('income','${x.id}')">Sil</button>`)).join("")||"<p class='small'>Gelir kaydı yok.</p>";
+    $("expenseList").innerHTML=state.expenses.map(x=>item(x.date,x.cat,x.desc+" • "+x.status,TL(x.amount),"bad",`${x.file?`<button class="doc" onclick="App.doc('${x.id}')">Belge/PDF</button>`:""} <button class="danger" onclick="App.del('expense','${x.id}')">Sil</button>`)).join("")||"<p class='small'>Gider kaydı yok.</p>";
+    $("peopleList").innerHTML=[...state.people.map(x=>item("Personel",x.name,x.role,TL(x.cost),"bad",`<button class="danger" onclick="App.del('person','${x.id}')">Sil</button>`)),...state.assets.map(x=>item("Demirbaş",x.name,x.who,TL(x.price),"bad",`<button class="danger" onclick="App.del('asset','${x.id}')">Sil</button>`))].join("")||"<p class='small'>Kayıt yok.</p>";
+    $("docsList").innerHTML=state.expenses.filter(x=>x.file).map(x=>item(x.date,x.file.name,x.desc,TL(x.amount),"warn",`<button class="doc" onclick="App.doc('${x.id}')">Aç/PDF</button>`)).join("")||"<p class='small'>Henüz belge yok.</p>";
+    $("reportCards").innerHTML=card("Toplam Gelir",TL(c.incOk+c.incWait),"good")+card("Toplam Gider",TL(c.expOk+c.expWait+c.p+c.as),"bad")+card("Net",TL(c.net),c.net>=0?"good":"bad")+card("Tahmini Kâr",TL(c.profit),c.profit>=0?"good":"bad");
+  }
+  function saveStart(){localStorage.setItem("am_start",v("start")||0);render()}
+  function backup(){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({version:"1.1",start:localStorage.getItem("am_start")||0,...state,backupDate:new Date().toISOString()},null,2)],{type:"application/json"}));a.download="al-mether-field-finance-yedek-v1-1.json";a.click()}
+  function initApp(){if($("start"))$("start").value=localStorage.getItem("am_start")||"";["iDate","eDate"].forEach(id=>$(id).value=today());render()}
+  function init(){nav();let u=JSON.parse(localStorage.getItem("am_session")||"null");if(!u){$("login").style.display="grid";$("app").style.display="none";return}$("login").style.display="none";$("app").style.display="block";initApp()}
+  return{init,auth,go,addIncome,addExpense,addPerson,addAsset,del,doc,saveStart,backup};
+})();
+App.init();
+</script>
+</body>
+</html>

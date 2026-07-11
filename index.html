@@ -1,0 +1,89 @@
+﻿<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AL Mether Field Finance</title>
+  <link rel="stylesheet" href="./assets/css/app.css" />
+</head>
+<body>
+  <div id="login" class="login">
+    <div class="loginBox glass">
+      <h1>Hoş geldiniz</h1>
+      <div class="welcome">AL Mether Field Finance</div>
+      <p class="small">CEO / Founder finans kontrol ekranı</p>
+      <div class="form">
+        <input id="loginMail" placeholder="Mail adresi">
+        <input id="loginPass" type="password" placeholder="Şifre">
+        <button onclick="App.auth.login()">Giriş Yap</button>
+      </div>
+      <p class="small">Demo: denizhidir35@gmail.com / 1234</p>
+    </div>
+  </div>
+
+  <div id="app" class="app">
+    <div class="layout">
+      <aside class="side">
+        <div class="sideLogo"><img src="mether-bg.jpeg"><div class="sideLogoText">METHER</div></div>
+        <div class="tag">Field Finance • CFO Core V1.2</div>
+        <div class="nav" id="sideNav"></div>
+      </aside>
+
+      <main class="main">
+        <div class="topbar glass">
+          <div class="brand"><h1 id="title">Ana Özet</h1><p id="sub">AL Mether Field Finance kontrol merkezi</p></div>
+          <div class="topActions">
+            <button class="ghost" onclick="App.backup()">Yedek Al</button>
+            <button class="danger" onclick="App.auth.logout()">Çıkış</button>
+          </div>
+        </div>
+
+        <section id="home" class="screen active">
+          <div id="homeSummary" class="mainSummary"></div>
+          <div class="glass panel"><h2>Modül Merkezi</h2><div id="moduleSummary" class="moduleSummary"></div></div>
+          <div class="glass panel"><h2>Son Hareketler</h2><div id="homeMoves" class="list"></div></div>
+        </section>
+
+        <section id="finance" class="screen">
+          <div class="glass panel">
+            <h2>Finans Merkezi</h2>
+            <p class="small">Başlangıç bakiyesi, tahsilatlar, ödemeler, bekleyenler, kâr/zarar ve CFO özetleri burada yönetilir.</p>
+            <div class="form"><input id="start" type="number" placeholder="Başlangıç bakiyesi" oninput="App.saveStart()"></div>
+          </div>
+          <div id="financeCards" class="kpis"></div>
+          <div class="glass panel"><h2>Finans Alt Modülleri</h2><div id="financeModules" class="moduleSummary"></div></div>
+        </section>
+
+        <section id="income" class="screen">
+          <div class="glass panel"><h2>Gelir / Hakediş</h2><div class="form"><input id="iDate" type="date"><select id="iType"><option>Bina giriş işi</option><option>Sokak işi</option><option>Arıza tespit</option><option>Ek iş</option></select><input id="iDesc" placeholder="Açıklama"><input id="iQty" type="number" placeholder="Bina / adet"><input id="iPrice" type="number" placeholder="Birim fiyat"><input id="iVat" type="number" value="20" placeholder="KDV %"><select id="iStatus"><option>Tahsil edildi</option><option>Bekliyor</option></select><button onclick="App.addIncome()">Gelir Ekle</button></div></div>
+          <div class="glass panel"><h2>Gelir Listesi</h2><div id="incomeList" class="list"></div></div>
+        </section>
+
+        <section id="expense" class="screen">
+          <div class="glass panel"><h2>Gider + Fatura</h2><div class="form"><input id="eDate" type="date"><select id="eCat"><option>Personel</option><option>Araç</option><option>Yakıt</option><option>Ekipman</option><option>Demirbaş</option><option>Muhasebe</option><option>Vergi</option><option>Yemek</option><option>Yol</option><option>Sarf malzeme</option><option>Banka masrafı</option><option>Diğer</option></select><input id="eDesc" placeholder="Açıklama"><input id="eAmount" type="number" placeholder="Tutar"><select id="eStatus"><option>Ödendi</option><option>Bekliyor</option></select><input id="eFile" type="file" accept="image/*,.pdf" capture="environment"><button onclick="App.addExpense()">Gider Ekle + Belge Kaydet</button></div></div>
+          <div class="glass panel"><h2>Gider Listesi</h2><div id="expenseList" class="list"></div></div>
+        </section>
+
+        <section id="people" class="screen">
+          <div class="grid2">
+            <div class="glass panel"><h2>Personel</h2><div class="form"><input id="pName" placeholder="Personel ad soyad"><input id="pRole" placeholder="Görev"><input id="pCost" type="number" placeholder="Aylık toplam maliyet"><button onclick="App.addPerson()">Personel Ekle</button></div></div>
+            <div class="glass panel"><h2>Demirbaş</h2><div class="form"><input id="aName" placeholder="Demirbaş adı"><input id="aPrice" type="number" placeholder="Fiyat"><input id="aWho" placeholder="Kime verildi"><button onclick="App.addAsset()">Demirbaş Ekle</button></div></div>
+          </div>
+          <div class="glass panel"><h2>Personel / Demirbaş Listesi</h2><div id="peopleList" class="list"></div></div>
+        </section>
+
+        <section id="docs" class="screen"><div class="glass panel"><h2>Belge Kasası</h2><div id="docsList" class="list"></div></div></section>
+        <section id="workshop" class="screen"><div class="glass panel"><h2>Workshop</h2><p class="small">İş emirleri, saha ekibi, araç, fotoğraf ve teslim takibi burada büyüyecek.</p></div></section>
+        <section id="reports" class="screen"><div class="glass panel"><h2>Raporlar</h2><div id="reportCards" class="report"></div></div></section>
+        <section id="settings" class="screen"><div class="glass panel"><h2>Ayarlar</h2><p class="small">Supabase, kullanıcı yetkileri, şirket ayarları ve AI CFO bağlantısı burada büyüyecek.</p></div></section>
+      </main>
+    </div>
+    <div class="mobileTab" id="mobileNav"></div>
+  </div>
+
+  <script src="./assets/js/core/storage.js"></script>
+  <script src="./assets/js/core/financeEngine.js"></script>
+  <script src="./assets/js/modules/navigation.js"></script>
+  <script src="./assets/js/app.js"></script>
+</body>
+</html>
