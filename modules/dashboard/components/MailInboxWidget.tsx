@@ -35,10 +35,10 @@ export function MailInboxWidget({ user }: { user: AppUser }) {
             <button type="button" onClick={() => setComposing(true)} className="ml-1 h-8 rounded-lg bg-blue-600 px-3 text-[10px] font-bold text-white hover:bg-blue-500">Yeni Mail</button>
           </div>
         </header>
-        <div className="flex h-9 items-center gap-2 border-b border-white/[0.05] px-3 text-[9px] font-semibold text-slate-500 sm:px-4">
+        <div className="flex h-9 items-center gap-3 border-b border-white/[0.05] px-3 text-[10px] font-semibold text-slate-500 sm:px-4">
           {FILTERS.map(item => <button key={item.id} type="button" onClick={() => mailbox.setFilter(item.id)} className={mailbox.filter === item.id ? "text-blue-400" : "transition hover:text-slate-300"}>{item.label}</button>)}
         </div>
-        <div className="mether-scroll h-[248px] overflow-auto">
+        <div className="mether-scroll h-[205px] overflow-auto">
           {mailbox.error ? <div className="grid h-[180px] place-items-center text-[10px] text-rose-300">{mailbox.error}</div> : null}
           {!mailbox.error && !mailbox.loading && mailbox.messages.length === 0 ? <div className="grid h-[180px] place-items-center text-[10px] text-slate-600">Bu filtrede mesaj yok.</div> : null}
           {mailbox.messages.map(mail => {
@@ -46,8 +46,8 @@ export function MailInboxWidget({ user }: { user: AppUser }) {
             return (
               <div key={mail.id} className={`grid w-full grid-cols-[24px_minmax(120px,.48fr)_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/[0.045] px-3 py-2.5 text-left transition hover:bg-white/[0.025] sm:px-4 ${!mail.isRead ? "bg-blue-500/[0.025]" : ""}`}>
                 <button type="button" disabled={!isRecipient} onClick={() => mailbox.toggleStarred(mail)} aria-label="Yıldız" className="disabled:cursor-default"><Star size={13} className={mail.isStarred ? "fill-amber-300 text-amber-300" : "text-slate-600"} /></button>
-                <button type="button" onClick={() => mailbox.toggleRead(mail)} className="min-w-0 text-left"><div className={`truncate text-[11px] ${!mail.isRead ? "font-black text-slate-100" : "font-semibold text-slate-300"}`}>{mail.senderName}</div><div className="truncate text-[8px] text-slate-600">{mail.senderEmail}</div></button>
-                <button type="button" onClick={() => mailbox.toggleRead(mail)} className="min-w-0 text-left"><div className={`truncate text-[11px] ${!mail.isRead ? "font-bold text-slate-200" : "font-medium text-slate-400"}`}>{mail.subject}</div><div className="mt-0.5 truncate text-[9px] text-slate-600">{mail.body}</div></button>
+                <button type="button" onClick={() => mailbox.toggleRead(mail)} className="min-w-0 text-left"><div className={`truncate text-[12px] ${!mail.isRead ? "font-black text-slate-100" : "font-semibold text-slate-300"}`}>{mail.senderName}</div><div className="truncate text-[9px] text-slate-500">{mail.senderEmail}</div></button>
+                <button type="button" onClick={() => mailbox.toggleRead(mail)} className="min-w-0 text-left"><div className={`truncate text-[12px] ${!mail.isRead ? "font-bold text-slate-200" : "font-medium text-slate-400"}`}>{mail.subject}</div><div className="mt-0.5 truncate text-[10px] text-slate-500">{mail.body}</div></button>
                 <div className="flex items-center gap-2">{mail.hasAttachment ? <Paperclip size={12} className="text-slate-600" /> : null}<span className="min-w-[34px] text-right text-[8px] font-semibold text-slate-600">{displayTime(mail.createdAt)}</span></div>
               </div>
             );

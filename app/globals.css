@@ -32,6 +32,38 @@ body {
   font-family: Inter, Arial, Helvetica, sans-serif;
 }
 
+.dashboard-viewport::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  left: -150px;
+  top: 50%;
+  width: 620px;
+  height: 620px;
+  transform: translateY(-46%);
+  background: url("/mether-logo.jpeg") center / contain no-repeat;
+  opacity: 0.065;
+  filter: saturate(1.15) contrast(1.05);
+  pointer-events: none;
+}
+
+@media (min-width: 1280px) {
+  .dashboard-viewport {
+    height: calc(100vh - 63px);
+    overflow: hidden;
+    padding-bottom: 78px;
+  }
+}
+
+@media (max-width: 1279px) {
+  .dashboard-viewport::before {
+    left: -190px;
+    width: 480px;
+    height: 480px;
+    opacity: 0.045;
+  }
+}
+
 button,
 input,
 select,
