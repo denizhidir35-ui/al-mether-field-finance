@@ -1,20 +1,10 @@
-export type DashboardMail = {
-  id: number;
-  sender: string;
-  email: string;
-  subject: string;
-  preview: string;
-  time: string;
-  unread: boolean;
-  attachment: boolean;
-};
-
 export type FieldTask = {
   title: string;
   location: string;
   team: string;
   status: string;
   progress: number;
+  dueTime: string;
 };
 
 export type FieldTeam = {
@@ -25,3 +15,27 @@ export type FieldTeam = {
   status: string;
 };
 
+export type UpcomingPayment = {
+  id: string;
+  title: string;
+  category: string;
+  amount: number;
+  dueLabel: string;
+  urgency: "today" | "soon" | "normal";
+};
+
+export type CalendarEvent = {
+  id: string;
+  day: string;
+  month: string;
+  time: string;
+  title: string;
+  context: string;
+};
+
+export type CeoNotification = {
+  id: string;
+  title: string;
+  detail: string;
+  tone: "amber" | "blue" | "emerald";
+};

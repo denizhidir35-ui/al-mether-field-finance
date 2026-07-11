@@ -38,7 +38,7 @@ export function MailInboxWidget({ user }: { user: AppUser }) {
         <div className="flex h-9 items-center gap-2 border-b border-white/[0.05] px-3 text-[9px] font-semibold text-slate-500 sm:px-4">
           {FILTERS.map(item => <button key={item.id} type="button" onClick={() => mailbox.setFilter(item.id)} className={mailbox.filter === item.id ? "text-blue-400" : "transition hover:text-slate-300"}>{item.label}</button>)}
         </div>
-        <div className="mether-scroll max-h-[310px] min-h-[180px] overflow-auto">
+        <div className="mether-scroll h-[248px] overflow-auto">
           {mailbox.error ? <div className="grid h-[180px] place-items-center text-[10px] text-rose-300">{mailbox.error}</div> : null}
           {!mailbox.error && !mailbox.loading && mailbox.messages.length === 0 ? <div className="grid h-[180px] place-items-center text-[10px] text-slate-600">Bu filtrede mesaj yok.</div> : null}
           {mailbox.messages.map(mail => {

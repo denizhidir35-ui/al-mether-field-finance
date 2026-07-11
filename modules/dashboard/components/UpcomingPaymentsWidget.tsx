@@ -1,0 +1,8 @@
+import { ArrowUpRight, CreditCard } from "lucide-react";
+import type { ModuleId } from "@/core/navigation/navigation.types";
+import { formatTry } from "@/core/formatters/currency";
+import type { UpcomingPayment } from "../types";
+
+export function UpcomingPaymentsWidget({ payments, onNavigate }: { payments: readonly UpcomingPayment[]; onNavigate: (module: ModuleId) => void }) {
+  return <article className="mether-surface rounded-[18px] p-3.5"><header className="flex items-center justify-between"><div className="flex items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-lg bg-amber-500/10 text-amber-300"><CreditCard size={14} /></span><div><h2 className="text-[12px] font-bold text-white">Yaklaşan ödemeler</h2><p className="text-[7px] text-slate-600">Ödeme takvimi özeti</p></div></div><button onClick={() => onNavigate("finance")} className="text-slate-600 hover:text-blue-400"><ArrowUpRight size={13} /></button></header><div className="mt-2.5 space-y-1.5">{payments.map(payment => <div key={payment.id} className="flex items-center gap-2 rounded-xl border border-white/[0.045] bg-white/[0.014] px-2.5 py-2"><span className={`h-6 w-1 rounded-full ${payment.urgency === "today" ? "bg-rose-400" : payment.urgency === "soon" ? "bg-amber-400" : "bg-blue-400"}`} /><div className="min-w-0 flex-1"><div className="truncate text-[9px] font-semibold text-slate-300">{payment.title}</div><div className="text-[7px] text-slate-600">{payment.category} · {payment.dueLabel}</div></div><span className="text-[9px] font-bold text-slate-300">{formatTry(payment.amount)}</span></div>)}</div></article>;
+}
