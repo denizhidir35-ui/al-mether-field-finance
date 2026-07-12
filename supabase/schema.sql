@@ -116,6 +116,39 @@ on conflict (company_id, user_id) do update set
   role = excluded.role,
   is_active = excluded.is_active;
 
+insert into profiles (id, company_id, email, display_name, role, is_active, updated_at)
+values (
+  '06869149-45a7-4229-b11b-daa23ca34418',
+  'al_mether',
+  'aytacturkbay@almether.com',
+  'Aytaç Türkbay',
+  'PARTNER',
+  true,
+  now()
+)
+on conflict (id) do update set
+  company_id = excluded.company_id,
+  email = excluded.email,
+  display_name = excluded.display_name,
+  role = excluded.role,
+  is_active = excluded.is_active,
+  updated_at = now();
+
+insert into company_memberships (company_id, user_id, email, display_name, role, is_active)
+values (
+  'al_mether',
+  '06869149-45a7-4229-b11b-daa23ca34418',
+  'aytacturkbay@almether.com',
+  'Aytaç Türkbay',
+  'PARTNER',
+  true
+)
+on conflict (company_id, user_id) do update set
+  email = excluded.email,
+  display_name = excluded.display_name,
+  role = excluded.role,
+  is_active = excluded.is_active;
+
 create table if not exists mether_mail_messages (
   id uuid primary key default gen_random_uuid(),
   company_id text not null references companies(id) on delete cascade,
@@ -133,6 +166,17 @@ create table if not exists mether_mail_messages (
   created_at timestamptz not null default now()
 );
 
+-- External IMAP/SMTP messages do not always map both sides to an Auth user.
+alter table mether_mail_messages alter column sender_user_id drop not null;
+alter table mether_mail_messages alter column recipient_user_id drop not null;
+alter table mether_mail_messages add column if not exists provider_message_id text;
+alter table mether_mail_messages add column if not exists mailbox_email text;
+alter table mether_mail_messages add column if not exists direction text not null default 'internal';
+
+drop index if exists mether_mail_provider_message_idx;
+create unique index mether_mail_provider_message_idx
+  on mether_mail_messages(company_id, mailbox_email, provider_message_id);
+
 create index if not exists mether_mail_recipient_idx
   on mether_mail_messages(company_id, recipient_user_id, created_at desc);
 create index if not exists mether_mail_sender_idx
@@ -144,7 +188,7 @@ drop policy if exists "participants read tenant mail" on mether_mail_messages;
 create policy "participants read tenant mail" on mether_mail_messages for select to authenticated
 using (
   is_company_member(company_id)
-  and auth.uid() in (sender_user_id, recipient_user_id)
+  and (auth.uid() = sender_user_id or auth.uid() = recipient_user_id)
 );
 
 drop policy if exists "recipients update mailbox state" on mether_mail_messages;
