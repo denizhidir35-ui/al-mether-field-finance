@@ -1,5 +1,12 @@
 export type MailFilter = "all" | "unread" | "attachments" | "starred";
 
+export type MailAttachment = {
+  id: string;
+  name: string;
+  contentType: string;
+  size: number;
+};
+
 export type MailMessage = {
   id: string;
   companyId: string;
@@ -11,9 +18,12 @@ export type MailMessage = {
   recipientEmail: string;
   subject: string;
   body: string;
+  htmlBody: string | null;
+  attachments: MailAttachment[];
   hasAttachment: boolean;
   isRead: boolean;
   isStarred: boolean;
+  isArchived: boolean;
   createdAt: string;
 };
 

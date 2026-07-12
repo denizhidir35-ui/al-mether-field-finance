@@ -68,6 +68,23 @@ export function useMetherMail(user: AppUser) {
     catch { await load(repository); }
   }, [context, load, repository]);
 
+  const archive = useCallback(async (message: MailMessage) => {
+    if (!repository) return;
+    await repository.archive(context, message.id);
+    setMessages(current => current.filter(item => item.id !== message.id));
+  }, [context, repository]);
+
+  const remove = useCallback(async (message: MailMessage) => {
+    if (!repository) return;
+    await repository.remove(context, message.id);
+    setMessages(current => current.filter(item => item.id !== message.id));
+  }, [context, repository]);
+
+  const downloadAttachment = useCallback(async (attachmentId: string) => {
+    if (!repository) throw new Error("Mail servisi hazır değil.");
+    return repository.downloadAttachment(context, attachmentId);
+  }, [context, repository]);
+
   const filteredMessages = messages.filter(message => {
     if (filter === "unread") return !message.isRead;
     if (filter === "attachments") return message.hasAttachment;
@@ -76,5 +93,6 @@ export function useMetherMail(user: AppUser) {
   });
 
   return { messages: filteredMessages, total: messages.length, unreadCount: messages.filter(item => !item.isRead).length,
-    filter, setFilter, loading, error, refresh: () => load(), send, toggleRead, toggleStarred };
+    filter, setFilter, loading, error, refresh: () => load(), send, toggleRead, toggleStarred,
+    archive, remove, downloadAttachment };
 }

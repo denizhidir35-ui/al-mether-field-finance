@@ -46,9 +46,12 @@ export class LocalMailRepository implements MailRepository {
       recipientEmail: input.recipientEmail.trim().toLowerCase(),
       subject: input.subject.trim(),
       body: input.body.trim(),
+      htmlBody: null,
+      attachments: [],
       hasAttachment: false,
       isRead: true,
       isStarred: false,
+      isArchived: false,
       createdAt: new Date().toISOString(),
     };
     write(context, [message, ...read(context)]);
@@ -61,5 +64,17 @@ export class LocalMailRepository implements MailRepository {
 
   async setStarred(context: MailboxContext, messageId: string, isStarred: boolean) {
     write(context, read(context).map(message => message.id === messageId && message.recipientEmail === context.userEmail ? { ...message, isStarred } : message));
+  }
+
+  async archive(context: MailboxContext, messageId: string) {
+    write(context, read(context).map(message => message.id === messageId ? { ...message, isArchived: true } : message));
+  }
+
+  async remove(context: MailboxContext, messageId: string) {
+    write(context, read(context).filter(message => message.id !== messageId));
+  }
+
+  async downloadAttachment(_context: MailboxContext, _attachmentId: string): Promise<Blob> {
+    throw new Error("Yerel modda indirilebilir ek bulunmuyor.");
   }
 }

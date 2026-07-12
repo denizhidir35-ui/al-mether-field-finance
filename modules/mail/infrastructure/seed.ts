@@ -18,9 +18,12 @@ export function createSeedMessages(context: MailboxContext): MailMessage[] {
     recipientEmail: context.userEmail,
     subject: String(subject),
     body: String(body),
+    htmlBody: null,
+    attachments: [],
     hasAttachment: Boolean(attachment),
     isRead: !unread,
     isStarred: false,
+    isArchived: false,
     createdAt: new Date(base - index * 86_400_000).toISOString(),
   }));
 }

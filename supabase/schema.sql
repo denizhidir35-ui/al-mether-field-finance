@@ -88,7 +88,7 @@ values (
   '9294fb0c-0cab-4d59-81c5-6867718112d6',
   'al_mether',
   'denizhidir@almether.com',
-  'Deniz Hıdır',
+  U&'Deniz H\0131d\0131r',
   'CEO',
   true,
   now()
@@ -106,7 +106,7 @@ values (
   'al_mether',
   '9294fb0c-0cab-4d59-81c5-6867718112d6',
   'denizhidir@almether.com',
-  'Deniz Hıdır',
+  U&'Deniz H\0131d\0131r',
   'CEO',
   true
 )
@@ -121,7 +121,7 @@ values (
   '06869149-45a7-4229-b11b-daa23ca34418',
   'al_mether',
   'aytacturkbay@almether.com',
-  'Aytaç Türkbay',
+  U&'Ayta\00E7 T\00FCrkbay',
   'PARTNER',
   true,
   now()
@@ -139,7 +139,7 @@ values (
   'al_mether',
   '06869149-45a7-4229-b11b-daa23ca34418',
   'aytacturkbay@almether.com',
-  'Aytaç Türkbay',
+  U&'Ayta\00E7 T\00FCrkbay',
   'PARTNER',
   true
 )
@@ -172,10 +172,43 @@ alter table mether_mail_messages alter column recipient_user_id drop not null;
 alter table mether_mail_messages add column if not exists provider_message_id text;
 alter table mether_mail_messages add column if not exists mailbox_email text;
 alter table mether_mail_messages add column if not exists direction text not null default 'internal';
+alter table mether_mail_messages add column if not exists html_body text;
+alter table mether_mail_messages add column if not exists is_archived boolean not null default false;
+alter table mether_mail_messages add column if not exists deleted_at timestamptz;
 
 drop index if exists mether_mail_provider_message_idx;
 create unique index mether_mail_provider_message_idx
   on mether_mail_messages(company_id, mailbox_email, provider_message_id);
+
+create table if not exists mether_mail_attachments (
+  id uuid primary key default gen_random_uuid(),
+  company_id text not null references companies(id) on delete cascade,
+  message_id uuid not null references mether_mail_messages(id) on delete cascade,
+  filename text not null,
+  content_type text not null default 'application/octet-stream',
+  byte_size bigint not null default 0,
+  storage_path text not null unique,
+  created_at timestamptz not null default now(),
+  unique (message_id, filename, byte_size)
+);
+
+alter table mether_mail_attachments enable row level security;
+drop policy if exists "participants read mail attachments" on mether_mail_attachments;
+create policy "participants read mail attachments" on mether_mail_attachments for select to authenticated
+using (
+  exists (
+    select 1 from mether_mail_messages message
+    where message.id = message_id
+      and message.company_id = company_id
+      and is_company_member(message.company_id)
+      and (auth.uid() = message.sender_user_id or auth.uid() = message.recipient_user_id)
+  )
+);
+grant select on mether_mail_attachments to authenticated;
+
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('mail-attachments', 'mail-attachments', false, 10485760)
+on conflict (id) do update set public = false, file_size_limit = 10485760;
 
 create index if not exists mether_mail_recipient_idx
   on mether_mail_messages(company_id, recipient_user_id, created_at desc);

@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ComposeMailInput, MailMessage, MailboxContext } from "../domain/mail";
+import type { ComposeMailInput, MailAttachment, MailMessage, MailboxContext } from "../domain/mail";
 import type { MailRepository } from "../domain/mail-repository";
 
 type MessageRow = {
   id: string; company_id: string; sender_user_id: string | null; sender_name: string; sender_email: string;
   recipient_user_id: string | null; recipient_name: string; recipient_email: string; subject: string; body: string;
-  has_attachment: boolean; is_read: boolean; is_starred: boolean; created_at: string;
+  html_body?: string | null; attachments?: MailAttachment[]; has_attachment: boolean; is_read: boolean; is_starred: boolean; is_archived?: boolean; created_at: string;
 };
 
 function fromRow(row: MessageRow): MailMessage {
@@ -13,7 +13,8 @@ function fromRow(row: MessageRow): MailMessage {
     id: row.id, companyId: row.company_id, senderId: row.sender_user_id || row.sender_email, senderName: row.sender_name,
     senderEmail: row.sender_email, recipientId: row.recipient_user_id || row.recipient_email, recipientName: row.recipient_name,
     recipientEmail: row.recipient_email, subject: row.subject, body: row.body, hasAttachment: row.has_attachment,
-    isRead: row.is_read, isStarred: row.is_starred, createdAt: row.created_at,
+    htmlBody: row.html_body || null, attachments: row.attachments || [],
+    isRead: row.is_read, isStarred: row.is_starred, isArchived: row.is_archived || false, createdAt: row.created_at,
   };
 }
 
@@ -44,8 +45,11 @@ export class SupabaseMailRepository implements MailRepository {
   async send(context: MailboxContext, input: ComposeMailInput) {
     const result = await this.api("/api/mail/send", {
       recipientEmail: input.recipientEmail.trim().toLowerCase(),
+      cc: input.cc || [],
+      bcc: input.bcc || [],
       subject: input.subject.trim(),
       body: input.body.trim(),
+      attachments: input.attachments || [],
     });
     return fromRow(result.message as MessageRow);
   }
@@ -60,5 +64,21 @@ export class SupabaseMailRepository implements MailRepository {
     const { error } = await this.client.from("mether_mail_messages").update({ is_starred: isStarred })
       .eq("id", messageId).eq("company_id", context.companyId).eq("recipient_user_id", context.userId);
     if (error) throw error;
+  }
+
+  async archive(_context: MailboxContext, messageId: string) {
+    await this.api("/api/mail/action", { messageId, action: "archive" });
+  }
+
+  async remove(_context: MailboxContext, messageId: string) {
+    await this.api("/api/mail/action", { messageId, action: "delete" });
+  }
+
+  async downloadAttachment(_context: MailboxContext, attachmentId: string) {
+    const { data, error } = await this.client.auth.getSession();
+    if (error || !data.session) throw new Error("Ek indirmek için oturum gerekli.");
+    const response = await fetch(`/api/mail/attachments/${attachmentId}`, { headers: { Authorization: `Bearer ${data.session.access_token}` } });
+    if (!response.ok) throw new Error("Ek indirilemedi.");
+    return response.blob();
   }
 }

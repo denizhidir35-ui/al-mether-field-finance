@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { Archive, ArrowLeft, Forward, MailOpen, Paperclip, RefreshCw, Reply, ReplyAll, Send, Star, Trash2, X } from "lucide-react";
+import { Archive, ArrowLeft, Download, Eye, Forward, MailOpen, Paperclip, RefreshCw, Reply, ReplyAll, Send, Star, Trash2, X } from "lucide-react";
 import { FocusLayer } from "@/components/workspace/FocusLayer";
 import type { WorkspaceOrigin } from "@/components/workspace/WorkspacePanel";
 import type { AppUser } from "@/types/auth";
@@ -48,6 +48,7 @@ export function MailWorkspace({ open, onClose, user, mailbox, initialMode, initi
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<{ url: string; name: string; type: string } | null>(null);
   const draftLoaded = useRef(false);
   const draftKey = `mether-mail:draft:${user.id}`;
 
@@ -72,6 +73,10 @@ export function MailWorkspace({ open, onClose, user, mailbox, initialMode, initi
     if (hasContent) window.localStorage.setItem(draftKey, JSON.stringify(draft));
     else window.localStorage.removeItem(draftKey);
   }, [draft, draftKey]);
+
+  useEffect(() => () => {
+    if (attachmentPreview?.url) URL.revokeObjectURL(attachmentPreview.url);
+  }, [attachmentPreview]);
 
   const visibleMessages = useMemo(() => mailbox.messages, [mailbox.messages]);
 
@@ -118,6 +123,36 @@ export function MailWorkspace({ open, onClose, user, mailbox, initialMode, initi
     } finally {
       setSending(false);
     }
+  }
+
+  async function downloadAttachment(id: string, name: string) {
+    const blob = await mailbox.downloadAttachment(id);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function openAttachment(id: string, name: string, type: string) {
+    const blob = await mailbox.downloadAttachment(id);
+    const url = URL.createObjectURL(blob);
+    setAttachmentPreview({ url, name, type });
+  }
+
+  async function archiveSelected() {
+    if (!selected) return;
+    await mailbox.archive(selected);
+    setSelected(null);
+    setMode("inbox");
+  }
+
+  async function removeSelected() {
+    if (!selected) return;
+    await mailbox.remove(selected);
+    setSelected(null);
+    setMode("inbox");
   }
 
   function onFiles(event: ChangeEvent<HTMLInputElement>) {
@@ -176,13 +211,19 @@ export function MailWorkspace({ open, onClose, user, mailbox, initialMode, initi
                   <button type="button" onClick={() => beginReply(selected, true)} className="workspace-icon-button" title="Tümüne yanıtla"><ReplyAll size={16} /></button>
                   <button type="button" onClick={() => { setDraft({ ...EMPTY_DRAFT, subject: `Fwd: ${selected.subject}`, body: selected.body }); draftLoaded.current = true; setMode("compose"); }} className="workspace-icon-button" title="İlet"><Forward size={16} /></button>
                 </div>
-                <div className="flex items-center gap-1"><button type="button" className="workspace-icon-button" title="Arşiv"><Archive size={16} /></button><button type="button" className="workspace-icon-button text-rose-300/70" title="Sil"><Trash2 size={16} /></button></div>
+                <div className="flex items-center gap-1"><button type="button" onClick={() => void archiveSelected()} className="workspace-icon-button" title="Arşiv"><Archive size={16} /></button><button type="button" onClick={() => void removeSelected()} className="workspace-icon-button text-rose-300/70" title="Sil"><Trash2 size={16} /></button></div>
               </div>
               <article className="mether-scroll flex-1 overflow-y-auto px-5 py-6 sm:px-8">
                 <h1 className="text-xl font-black tracking-[-0.02em] text-white sm:text-2xl">{selected.subject}</h1>
                 <div className="mt-5 flex items-start justify-between gap-4 border-b border-white/[0.06] pb-5"><div><div className="text-sm font-bold text-slate-200">{selected.senderName}</div><div className="mt-1 text-[10px] text-slate-500">{selected.senderEmail} → {selected.recipientEmail}</div></div><div className="text-right text-[9px] text-slate-600">{messageDate(selected.createdAt)}{selected.hasAttachment ? <div className="mt-2 flex items-center justify-end gap-1"><Paperclip size={12} /> Ekli</div> : null}</div></div>
-                <div className="whitespace-pre-wrap break-words py-7 text-[13px] leading-7 text-slate-300">{selected.body}</div>
+                {selected.attachments.length ? <div className="flex flex-wrap gap-2 border-b border-white/[0.06] py-4">{selected.attachments.map(attachment => <div key={attachment.id} className="flex items-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.035] transition hover:border-blue-400/30 hover:bg-blue-500/[0.06]"><button type="button" onClick={() => void openAttachment(attachment.id, attachment.name, attachment.contentType)} className="flex items-center gap-2 px-3 py-2 text-left"><Eye size={13} className="text-blue-300" /><span><span className="block max-w-[220px] truncate text-[10px] font-bold text-slate-200">{attachment.name}</span><span className="text-[8px] text-slate-600">{Math.max(1, Math.round(attachment.size / 1024))} KB</span></span></button><button type="button" onClick={() => void downloadAttachment(attachment.id, attachment.name)} title="İndir" className="grid h-10 w-9 place-items-center border-l border-white/[0.07] text-slate-500 transition hover:bg-blue-500/10 hover:text-blue-300"><Download size={13} /></button></div>)}</div> : null}
+                {selected.htmlBody ? (
+                  <iframe title={`${selected.subject} içeriği`} sandbox="allow-popups" srcDoc={selected.htmlBody} className="mt-6 min-h-[620px] w-full rounded-xl border border-white/[0.08] bg-white" />
+                ) : (
+                  <div className="whitespace-pre-wrap break-words py-7 text-[13px] leading-7 text-slate-300">{selected.body}</div>
+                )}
               </article>
+              {attachmentPreview ? <div className="absolute inset-0 z-30 flex flex-col bg-[#07101f]/98"><header className="flex h-14 items-center justify-between gap-3 border-b border-white/[0.08] px-4"><div className="min-w-0"><div className="truncate text-[11px] font-bold text-white">{attachmentPreview.name}</div><div className="text-[8px] text-slate-600">{attachmentPreview.type}</div></div><div className="flex items-center gap-1"><button type="button" onClick={() => { const link = document.createElement("a"); link.href = attachmentPreview.url; link.download = attachmentPreview.name; link.click(); }} className="workspace-icon-button" title="İndir"><Download size={16} /></button><button type="button" onClick={() => setAttachmentPreview(null)} className="workspace-icon-button" aria-label="Ek önizlemeyi kapat"><X size={17} /></button></div></header><div className="min-h-0 flex-1 bg-slate-950/60 p-3">{attachmentPreview.type === "application/pdf" || attachmentPreview.type.startsWith("image/") ? <iframe title={`${attachmentPreview.name} önizleme`} src={attachmentPreview.url} className="h-full w-full rounded-xl border border-white/[0.08] bg-white" /> : <div className="grid h-full place-items-center text-center"><div><Paperclip size={30} className="mx-auto text-blue-300/60" /><p className="mt-3 text-xs font-bold text-slate-300">Bu dosya tarayıcıda önizlenemiyor.</p><p className="mt-1 text-[10px] text-slate-600">İndirme butonuyla güvenli şekilde açabilirsin.</p></div></div>}</div></div> : null}
             </div>
           ) : null}
 

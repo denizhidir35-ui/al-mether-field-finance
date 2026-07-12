@@ -15,9 +15,22 @@ export async function POST(request: NextRequest) {
       .select("*")
       .eq("company_id", user.companyId)
       .or(`recipient_user_id.eq.${user.id},sender_user_id.eq.${user.id}`)
+      .eq("is_archived", false)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return NextResponse.json({ synced, messages });
+    const ids = (messages || []).map(message => message.id);
+    const attachmentResult = ids.length
+      ? await adminClient.from("mether_mail_attachments").select("id,message_id,filename,content_type,byte_size").in("message_id", ids)
+      : { data: [], error: null };
+    if (attachmentResult.error) throw new Error(attachmentResult.error.message);
+    const enriched = (messages || []).map(message => ({
+      ...message,
+      attachments: (attachmentResult.data || []).filter(item => item.message_id === message.id).map(item => ({
+        id: item.id, name: item.filename, contentType: item.content_type, size: Number(item.byte_size),
+      })),
+    }));
+    return NextResponse.json({ synced, messages: enriched });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Mail senkronizasyonu başarısız." }, { status: 400 });
   }
