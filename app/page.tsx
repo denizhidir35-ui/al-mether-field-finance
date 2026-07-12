@@ -5,22 +5,22 @@ import { LoginScreen } from "@/components/auth/LoginScreen";
 import { AppShell } from "@/components/layout/AppShell";
 import { IntroVideo } from "@/components/layout/IntroVideo";
 import { ModuleRenderer } from "@/components/layout/ModuleRenderer";
-import { useLocalSession } from "@/hooks/useLocalSession";
+import { useAppSession } from "@/hooks/useAppSession";
 import type { ModuleId } from "@/core/navigation/navigation.types";
 
 export default function HomePage() {
-  const { user, initialized, startSession, endSession } = useLocalSession();
+  const { user, initialized, startSession, endSession } = useAppSession();
   const [activeModule, setActiveModule] = useState<ModuleId>("dashboard");
   const [showIntro, setShowIntro] = useState(false);
 
   if (!initialized) return null;
 
   if (!user) {
-    return <LoginScreen onAuthenticated={authenticatedUser => { startSession(authenticatedUser); setShowIntro(true); }} />;
+    return <LoginScreen onAuthenticate={async (email, password) => { await startSession(email, password); setShowIntro(true); }} />;
   }
 
   function logout() {
-    endSession();
+    void endSession();
     setActiveModule("dashboard");
   }
 

@@ -1,22 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { authenticateUser } from "@/core/auth/users";
-import type { AppUser } from "@/types/auth";
 
-type LoginScreenProps = { onAuthenticated: (user: AppUser) => void };
+type LoginScreenProps = { onAuthenticate: (email: string, password: string) => Promise<void> };
 
-export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
-  const [email, setEmail] = useState("denizhidir@almether.com");
-  const [password, setPassword] = useState("1234");
+export function LoginScreen({ onAuthenticate }: LoginScreenProps) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function login() {
-    const authenticated = authenticateUser(email, password);
-    if (!authenticated) {
-      window.alert("Şirket maili veya şifre hatalı.");
-      return;
+  async function login() {
+    if (submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onAuthenticate(email, password);
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "Giriş yapılamadı.");
+    } finally {
+      setSubmitting(false);
     }
-    onAuthenticated(authenticated);
   }
 
   return (
@@ -29,11 +33,11 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps) {
         <div className="mt-6 space-y-2.5">
           <input value={email} onChange={event => setEmail(event.target.value)} className="mether-input h-11 rounded-xl px-3 text-sm" placeholder="Şirket maili" autoComplete="username" />
           <input value={password} onChange={event => setPassword(event.target.value)} onKeyDown={event => { if (event.key === "Enter") login(); }} type="password" className="mether-input h-11 rounded-xl px-3 text-sm" placeholder="Şifre" autoComplete="current-password" />
-          <button type="button" onClick={login} className="h-11 w-full rounded-xl bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-500">Giriş Yap</button>
+          {error ? <p className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-200">{error}</p> : null}
+          <button type="button" disabled={submitting} onClick={login} className="h-11 w-full rounded-xl bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-500 disabled:cursor-wait disabled:opacity-60">{submitting ? "Giriş yapılıyor..." : "Giriş Yap"}</button>
         </div>
-        <div className="mt-4 text-[10px] text-slate-700">denizhidir@almether.com / 1234</div>
+        <div className="mt-4 text-[10px] text-slate-700">Supabase Auth ile güvenli şirket oturumu</div>
       </section>
     </main>
   );
 }
-

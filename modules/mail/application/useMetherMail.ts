@@ -43,9 +43,15 @@ export function useMetherMail(user: AppUser) {
   }, [context]);
 
   const send = useCallback(async (input: ComposeMailInput) => {
-    if (!repository) return;
-    await repository.send(context, input);
-    await load(repository);
+    if (!repository) throw new Error("Mail servisi hazır değil.");
+    try {
+      await repository.send(context, input);
+      await load(repository);
+    } catch (sendError) {
+      const message = sendError instanceof Error ? sendError.message : "Mail gönderilemedi.";
+      setError(message);
+      throw sendError;
+    }
   }, [context, load, repository]);
 
   const toggleRead = useCallback(async (message: MailMessage) => {
