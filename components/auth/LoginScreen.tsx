@@ -4,6 +4,14 @@ import { useState } from "react";
 
 type LoginScreenProps = { onAuthenticate: (email: string, password: string) => Promise<void> };
 
+function loginErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
+    return error.message;
+  }
+  return "Giriş yapılamadı.";
+}
+
 export function LoginScreen({ onAuthenticate }: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,7 +25,7 @@ export function LoginScreen({ onAuthenticate }: LoginScreenProps) {
     try {
       await onAuthenticate(email, password);
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : "Giriş yapılamadı.");
+      setError(loginErrorMessage(loginError));
     } finally {
       setSubmitting(false);
     }

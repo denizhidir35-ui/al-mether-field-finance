@@ -21,6 +21,26 @@ create table if not exists company_memberships (
   unique (company_id, email)
 );
 
+create table if not exists profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  company_id text not null references companies(id) on delete cascade,
+  email text not null unique,
+  display_name text not null,
+  role text not null default 'ASSISTANT' check (role in ('CEO', 'PARTNER', 'ASSISTANT')),
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Keep the migration usable when a minimal profiles table already exists.
+alter table profiles add column if not exists company_id text references companies(id) on delete cascade;
+alter table profiles add column if not exists email text;
+alter table profiles add column if not exists display_name text;
+alter table profiles add column if not exists role text default 'ASSISTANT';
+alter table profiles add column if not exists is_active boolean default true;
+alter table profiles add column if not exists created_at timestamptz default now();
+alter table profiles add column if not exists updated_at timestamptz default now();
+
 create or replace function is_company_member(target_company_id text)
 returns boolean
 language sql
@@ -41,6 +61,7 @@ grant execute on function is_company_member(text) to authenticated;
 
 alter table companies enable row level security;
 alter table company_memberships enable row level security;
+alter table profiles enable row level security;
 
 drop policy if exists "members read own companies" on companies;
 create policy "members read own companies" on companies for select to authenticated
@@ -49,6 +70,51 @@ using (is_company_member(id));
 drop policy if exists "members read own memberships" on company_memberships;
 create policy "members read own memberships" on company_memberships for select to authenticated
 using (is_company_member(company_id));
+
+drop policy if exists "users read own profile" on profiles;
+create policy "users read own profile" on profiles for select to authenticated
+using (id = auth.uid() and is_active);
+
+revoke insert, update, delete on profiles from anon, authenticated;
+grant select on profiles to authenticated;
+
+-- Bootstrap the existing manually-created Supabase Auth user. This does not create auth users.
+insert into companies (id, name)
+values ('al_mether', 'AL METHER')
+on conflict (id) do update set name = excluded.name;
+
+insert into profiles (id, company_id, email, display_name, role, is_active, updated_at)
+values (
+  '9294fb0c-0cab-4d59-81c5-6867718112d6',
+  'al_mether',
+  'denizhidir@almether.com',
+  'Deniz Hıdır',
+  'CEO',
+  true,
+  now()
+)
+on conflict (id) do update set
+  company_id = excluded.company_id,
+  email = excluded.email,
+  display_name = excluded.display_name,
+  role = excluded.role,
+  is_active = excluded.is_active,
+  updated_at = now();
+
+insert into company_memberships (company_id, user_id, email, display_name, role, is_active)
+values (
+  'al_mether',
+  '9294fb0c-0cab-4d59-81c5-6867718112d6',
+  'denizhidir@almether.com',
+  'Deniz Hıdır',
+  'CEO',
+  true
+)
+on conflict (company_id, user_id) do update set
+  email = excluded.email,
+  display_name = excluded.display_name,
+  role = excluded.role,
+  is_active = excluded.is_active;
 
 create table if not exists mether_mail_messages (
   id uuid primary key default gen_random_uuid(),
