@@ -3,18 +3,20 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { WorkspaceBackdrop } from "./WorkspaceBackdrop";
-import { WorkspacePanel } from "./WorkspacePanel";
+import { WorkspacePanel, type WorkspaceOrigin } from "./WorkspacePanel";
 
 type FocusLayerProps = {
   open: boolean;
   onClose: () => void;
   label: string;
   children: ReactNode;
+  origin?: WorkspaceOrigin | null;
+  originPreview?: ReactNode;
 };
 
 const FOCUSABLE = "button:not([disabled]),a[href],input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex='-1'])";
 
-export function FocusLayer({ open, onClose, label, children }: FocusLayerProps) {
+export function FocusLayer({ open, onClose, label, children, origin, originPreview }: FocusLayerProps) {
   const [present, setPresent] = useState(open);
   const [active, setActive] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -29,7 +31,7 @@ export function FocusLayer({ open, onClose, label, children }: FocusLayerProps) 
       return () => cancelAnimationFrame(frame);
     }
     setActive(false);
-    const timeout = window.setTimeout(() => setPresent(false), 210);
+    const timeout = window.setTimeout(() => setPresent(false), 260);
     return () => window.clearTimeout(timeout);
   }, [open]);
 
@@ -84,7 +86,16 @@ export function FocusLayer({ open, onClose, label, children }: FocusLayerProps) 
       }}
     >
       <WorkspaceBackdrop active={active} onClose={onClose} />
-      <WorkspacePanel ref={panelRef} active={active}>{children}</WorkspacePanel>
+      {origin && originPreview ? (
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none fixed z-20 overflow-hidden rounded-xl border border-blue-400/25 bg-[#0b1427]/98 shadow-[0_12px_40px_rgba(37,99,235,.24)] transition-opacity duration-100 ${active ? "opacity-0" : "opacity-100"}`}
+          style={{ top: origin.top, left: origin.left, width: origin.width, height: origin.height }}
+        >
+          {originPreview}
+        </div>
+      ) : null}
+      <WorkspacePanel ref={panelRef} active={active} origin={origin}>{children}</WorkspacePanel>
     </div>,
     document.body,
   );

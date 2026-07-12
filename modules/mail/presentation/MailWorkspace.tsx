@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Archive, ArrowLeft, Forward, MailOpen, Paperclip, RefreshCw, Reply, ReplyAll, Send, Star, Trash2, X } from "lucide-react";
 import { FocusLayer } from "@/components/workspace/FocusLayer";
+import type { WorkspaceOrigin } from "@/components/workspace/WorkspacePanel";
 import type { AppUser } from "@/types/auth";
 import type { useMetherMail } from "../application/useMetherMail";
 import type { ComposeMailInput, MailMessage } from "../domain/mail";
@@ -20,6 +21,7 @@ type MailWorkspaceProps = {
   mailbox: Mailbox;
   initialMode: WorkspaceMode;
   initialMessage: MailMessage | null;
+  origin: WorkspaceOrigin | null;
 };
 
 function splitEmails(value: string) {
@@ -39,7 +41,7 @@ function messageDate(value: string) {
   return new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
-export function MailWorkspace({ open, onClose, user, mailbox, initialMode, initialMessage }: MailWorkspaceProps) {
+export function MailWorkspace({ open, onClose, user, mailbox, initialMode, initialMessage, origin }: MailWorkspaceProps) {
   const [mode, setMode] = useState<WorkspaceMode>(initialMode);
   const [selected, setSelected] = useState<MailMessage | null>(initialMessage);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
@@ -126,7 +128,17 @@ export function MailWorkspace({ open, onClose, user, mailbox, initialMode, initi
   }
 
   return (
-    <FocusLayer open={open} onClose={onClose} label="Mether Mail çalışma alanı">
+    <FocusLayer
+      open={open}
+      onClose={onClose}
+      label="Mether Mail çalışma alanı"
+      origin={origin}
+      originPreview={initialMessage ? (
+        <div className="flex h-full items-center gap-3 px-4"><div className="min-w-0"><div className="truncate text-[12px] font-black text-white">{initialMessage.senderName}</div><div className="mt-1 truncate text-[10px] text-slate-400">{initialMessage.subject}</div></div></div>
+      ) : (
+        <div className="grid h-full place-items-center text-[10px] font-bold text-blue-200">Mether Mail</div>
+      )}
+    >
       <header className="flex min-h-16 items-center justify-between gap-3 border-b border-white/[0.07] px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           {mode !== "inbox" ? <button type="button" onClick={() => setMode("inbox")} className="workspace-icon-button md:hidden" aria-label="Gelen kutusuna dön"><ArrowLeft size={17} /></button> : null}

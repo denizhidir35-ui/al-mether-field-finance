@@ -173,3 +173,15 @@ button {
   border-color: rgba(96, 165, 250, 0.55);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.09);
 }
+
+.mail-row-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  transition: -webkit-line-clamp 180ms ease-out;
+}
+
+.group:hover .mail-row-preview {
+  -webkit-line-clamp: 3;
+}
