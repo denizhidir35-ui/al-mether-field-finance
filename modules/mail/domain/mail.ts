@@ -19,8 +19,11 @@ export type MailMessage = {
 
 export type ComposeMailInput = {
   recipientEmail: string;
+  cc?: string[];
+  bcc?: string[];
   subject: string;
   body: string;
+  attachments?: { name: string; type: string; data: string }[];
 };
 
 export type MailboxContext = {

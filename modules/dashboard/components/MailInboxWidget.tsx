@@ -5,7 +5,8 @@ import { ChevronRight, MailOpen, MoreHorizontal, Paperclip, RefreshCw, Star } fr
 import type { AppUser } from "@/types/auth";
 import { useMetherMail } from "@/modules/mail/application/useMetherMail";
 import type { MailFilter } from "@/modules/mail/domain/mail";
-import { ComposeMailDialog } from "@/modules/mail/presentation/ComposeMailDialog";
+import type { MailMessage } from "@/modules/mail/domain/mail";
+import { MailWorkspace } from "@/modules/mail/presentation/MailWorkspace";
 
 const FILTERS: { id: MailFilter; label: string }[] = [
   { id: "all", label: "Tümü" }, { id: "unread", label: "Okunmamış" },
@@ -22,7 +23,15 @@ function displayTime(value: string) {
 
 export function MailInboxWidget({ user }: { user: AppUser }) {
   const mailbox = useMetherMail(user);
-  const [composing, setComposing] = useState(false);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [workspaceMode, setWorkspaceMode] = useState<"inbox" | "read" | "compose">("inbox");
+  const [selectedMessage, setSelectedMessage] = useState<MailMessage | null>(null);
+
+  function openWorkspace(mode: "inbox" | "read" | "compose", message: MailMessage | null = null) {
+    setWorkspaceMode(mode);
+    setSelectedMessage(message);
+    setWorkspaceOpen(true);
+  }
 
   return (
     <>
@@ -32,7 +41,7 @@ export function MailInboxWidget({ user }: { user: AppUser }) {
           <div className="flex items-center gap-1">
             <button type="button" onClick={mailbox.refresh} title="Yenile" className="grid h-8 w-8 place-items-center rounded-lg text-slate-600 transition hover:bg-white/[0.04] hover:text-slate-300"><RefreshCw size={14} className={mailbox.loading ? "animate-spin" : ""} /></button>
             <button type="button" title="Diğer" className="grid h-8 w-8 place-items-center rounded-lg text-slate-600 transition hover:bg-white/[0.04] hover:text-slate-300"><MoreHorizontal size={15} /></button>
-            <button type="button" onClick={() => setComposing(true)} className="ml-1 h-8 rounded-lg bg-blue-600 px-3 text-[10px] font-bold text-white hover:bg-blue-500">Yeni Mail</button>
+            <button type="button" onClick={() => openWorkspace("compose")} className="ml-1 h-8 rounded-lg bg-blue-600 px-3 text-[10px] font-bold text-white hover:bg-blue-500">Yeni Mail</button>
           </div>
         </header>
         <div className="flex h-9 items-center gap-3 border-b border-white/[0.05] px-3 text-[10px] font-semibold text-slate-500 sm:px-4">
@@ -46,16 +55,16 @@ export function MailInboxWidget({ user }: { user: AppUser }) {
             return (
               <div key={mail.id} className={`grid w-full grid-cols-[24px_minmax(120px,.48fr)_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/[0.045] px-3 py-2.5 text-left transition hover:bg-white/[0.025] sm:px-4 ${!mail.isRead ? "bg-blue-500/[0.025]" : ""}`}>
                 <button type="button" disabled={!isRecipient} onClick={() => mailbox.toggleStarred(mail)} aria-label="Yıldız" className="disabled:cursor-default"><Star size={13} className={mail.isStarred ? "fill-amber-300 text-amber-300" : "text-slate-600"} /></button>
-                <button type="button" onClick={() => mailbox.toggleRead(mail)} className="min-w-0 text-left"><div className={`truncate text-[12px] ${!mail.isRead ? "font-black text-slate-100" : "font-semibold text-slate-300"}`}>{mail.senderName}</div><div className="truncate text-[9px] text-slate-500">{mail.senderEmail}</div></button>
-                <button type="button" onClick={() => mailbox.toggleRead(mail)} className="min-w-0 text-left"><div className={`truncate text-[12px] ${!mail.isRead ? "font-bold text-slate-200" : "font-medium text-slate-400"}`}>{mail.subject}</div><div className="mt-0.5 truncate text-[10px] text-slate-500">{mail.body}</div></button>
+                <button type="button" onClick={() => openWorkspace("read", mail)} className="min-w-0 text-left"><div className={`truncate text-[12px] ${!mail.isRead ? "font-black text-slate-100" : "font-semibold text-slate-300"}`}>{mail.senderName}</div><div className="truncate text-[9px] text-slate-500">{mail.senderEmail}</div></button>
+                <button type="button" onClick={() => openWorkspace("read", mail)} className="min-w-0 text-left"><div className={`truncate text-[12px] ${!mail.isRead ? "font-bold text-slate-200" : "font-medium text-slate-400"}`}>{mail.subject}</div><div className="mt-0.5 truncate text-[10px] text-slate-500">{mail.body}</div></button>
                 <div className="flex items-center gap-2">{mail.hasAttachment ? <Paperclip size={12} className="text-slate-600" /> : null}<span className="min-w-[34px] text-right text-[8px] font-semibold text-slate-600">{displayTime(mail.createdAt)}</span></div>
               </div>
             );
           })}
         </div>
-        <footer className="flex h-9 items-center justify-between px-3 text-[8px] text-slate-600 sm:px-4"><span>{mailbox.messages.length} / {mailbox.total} mail</span><span className="flex items-center gap-1 text-blue-400">Mether Mail<ChevronRight size={12} /></span></footer>
+        <footer className="flex h-9 items-center justify-between px-3 text-[8px] text-slate-600 sm:px-4"><span>{mailbox.messages.length} / {mailbox.total} mail</span><button type="button" onClick={() => openWorkspace("inbox")} className="flex items-center gap-1 text-blue-400 transition hover:text-blue-300">Mether Mail<ChevronRight size={12} /></button></footer>
       </article>
-      {composing ? <ComposeMailDialog onClose={() => setComposing(false)} onSend={mailbox.send} /> : null}
+      <MailWorkspace open={workspaceOpen} onClose={() => setWorkspaceOpen(false)} user={user} mailbox={mailbox} initialMode={workspaceMode} initialMessage={selectedMessage} />
     </>
   );
 }

@@ -64,7 +64,7 @@ export async function sendHostingerMail(
   adminClient: SupabaseClient,
   user: ServerMailUser,
   account: MailAccount,
-  input: { recipientEmail: string; subject: string; body: string },
+  input: { recipientEmail: string; cc: string[]; bcc: string[]; subject: string; body: string; attachments: { name: string; type: string; data: string }[] },
 ) {
   const transporter = nodemailer.createTransport({
     host: "smtp.hostinger.com", port: 465, secure: true,
@@ -73,8 +73,15 @@ export async function sendHostingerMail(
   const sent = await transporter.sendMail({
     from: { name: user.displayName, address: account.email },
     to: input.recipientEmail,
+    cc: input.cc,
+    bcc: input.bcc,
     subject: input.subject,
     text: input.body,
+    attachments: input.attachments.map(attachment => ({
+      filename: attachment.name,
+      contentType: attachment.type,
+      content: Buffer.from(attachment.data.split(",", 2)[1] || "", "base64"),
+    })),
   });
 
   const { data, error } = await adminClient.from("mether_mail_messages").insert({
@@ -87,7 +94,7 @@ export async function sendHostingerMail(
     recipient_email: input.recipientEmail,
     subject: input.subject,
     body: input.body,
-    has_attachment: false,
+    has_attachment: input.attachments.length > 0,
     is_read: true,
     is_starred: false,
     provider_message_id: sent.messageId,

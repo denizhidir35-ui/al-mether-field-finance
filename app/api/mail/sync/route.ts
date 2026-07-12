@@ -11,7 +11,13 @@ export async function POST(request: NextRequest) {
     const { user, adminClient } = await requireMailUser(request);
     const account = getMailAccount(user.email);
     const synced = await syncHostingerInbox(adminClient, user, account);
-    return NextResponse.json({ synced });
+    const { data: messages, error } = await adminClient.from("mether_mail_messages")
+      .select("*")
+      .eq("company_id", user.companyId)
+      .or(`recipient_user_id.eq.${user.id},sender_user_id.eq.${user.id}`)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return NextResponse.json({ synced, messages });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Mail senkronizasyonu başarısız." }, { status: 400 });
   }

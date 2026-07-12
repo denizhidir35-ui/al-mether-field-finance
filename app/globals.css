@@ -32,6 +32,26 @@ body {
   font-family: Inter, Arial, Helvetica, sans-serif;
 }
 
+[data-focus-layer-root] {
+  transform-origin: center;
+  transition: transform 200ms ease-out, opacity 200ms ease-out, filter 200ms ease-out;
+  will-change: auto;
+}
+
+.focus-layer-open [data-focus-layer-root] {
+  transform: scale(0.98);
+  opacity: 0.91;
+  filter: blur(8px);
+  pointer-events: none;
+  will-change: transform, opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-focus-layer-root] {
+    transition-duration: 1ms;
+  }
+}
+
 .dashboard-viewport::before {
   content: "";
   position: fixed;
@@ -119,4 +139,37 @@ button {
 
 .mether-dock::-webkit-scrollbar {
   display: none;
+}
+
+.workspace-icon-button {
+  display: inline-grid;
+  height: 36px;
+  width: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 11px;
+  color: rgb(100 116 139);
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.workspace-icon-button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgb(226 232 240);
+}
+
+.workspace-input {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  border-radius: 14px;
+  background: rgba(2, 7, 18, 0.58);
+  padding: 11px 13px;
+  color: rgb(241 245 249);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.workspace-input:focus {
+  border-color: rgba(96, 165, 250, 0.55);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.09);
 }

@@ -22,7 +22,7 @@ export function AppShell({
   children
 }: AppShellProps) {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" data-focus-layer-root>
       <TopBar user={user} onLogout={onLogout} />
 
       <main className={`relative px-2.5 pb-32 pt-2.5 sm:px-4 sm:pb-28 sm:pt-3 ${activeModule === "dashboard" ? "dashboard-viewport" : ""}`}>

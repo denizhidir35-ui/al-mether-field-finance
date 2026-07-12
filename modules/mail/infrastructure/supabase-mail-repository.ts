@@ -31,18 +31,14 @@ export class SupabaseMailRepository implements MailRepository {
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    const result = await response.json() as { error?: string; message?: MessageRow };
+    const result = await response.json() as { error?: string; message?: MessageRow; messages?: MessageRow[] };
     if (!response.ok) throw new Error(result.error || "Mail servisi yanıt vermedi.");
     return result;
   }
 
   async listInbox(context: MailboxContext) {
-    await this.api("/api/mail/sync");
-    const { data, error } = await this.client.from("mether_mail_messages").select("*")
-      .eq("company_id", context.companyId).or(`recipient_user_id.eq.${context.userId},sender_user_id.eq.${context.userId}`)
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return (data as MessageRow[]).map(fromRow);
+    const result = await this.api("/api/mail/sync");
+    return (result.messages || []).map(fromRow);
   }
 
   async send(context: MailboxContext, input: ComposeMailInput) {
