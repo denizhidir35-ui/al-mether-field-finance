@@ -28,7 +28,7 @@ export function MapMarkers({ map, markerLibrary, markers, onMarkerClick }: { map
         zIndex: marker.active ? 20 : 10
       });
 
-      instance.addListener("click", () => onMarkerClick?.(marker));
+      instance.addEventListener("gmp-click", () => onMarkerClick?.(marker));
       return instance;
     });
 
