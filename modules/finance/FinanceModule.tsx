@@ -1,224 +1,120 @@
-"use client";
-
-import { useState } from "react";
-import { Plus, WalletCards } from "lucide-react";
+import { BrainCircuit, CheckCircle2, Clock3, Landmark, Network, ShieldCheck, Sparkles, WalletCards } from "lucide-react";
 import type { AppUser } from "@/types/auth";
-import { supabase } from "@/core/supabase/client";
-import { Metric } from "@/components/ui/Metric";
-import { formatTry } from "@/core/formatters/currency";
-import { useFinanceEntries } from "./useFinanceEntries";
 
-type FinanceModuleProps = {
-  user: AppUser;
-};
+type FinanceModuleProps = { user: AppUser };
 
-export function FinanceModule({ user }: FinanceModuleProps) {
-  const { entries, totals, reload } = useFinanceEntries();
-  const [type, setType] = useState<"income" | "expense">("income");
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("Hakediş");
-  const [amount, setAmount] = useState("");
+const ROADMAP = [
+  { label: "Finans Dashboard", ready: true },
+  { label: "Banka Hesapları", ready: false },
+  { label: "Banka Hareketleri", ready: false },
+  { label: "Tahsilatlar", ready: false },
+  { label: "Ödemeler", ready: false },
+  { label: "KDV Yönetimi", ready: false },
+  { label: "Nakit Akışı", ready: false },
+  { label: "AI Finans Analizi", ready: false },
+] as const;
 
-  async function saveEntry() {
-    const db = supabase;
+const BANKS = ["İş Bankası", "Garanti BBVA", "Ziraat Bankası", "QNB", "VakıfBank"] as const;
 
-    if (!db) {
-      alert("Supabase bağlantısı henüz kurulmadı.");
-      return;
-    }
+const VISION_FEATURES = [
+  "Banka API entegrasyonları",
+  "AI destekli finans analizi",
+  "Otomatik hareket sınıflandırma",
+  "KDV önerileri",
+  "Nakit akışı tahmini",
+  "Finansal raporlama",
+] as const;
 
-    if (!title.trim() || Number(amount) <= 0) {
-      alert("Açıklama ve geçerli tutar gir.");
-      return;
-    }
-
-    const { error } = await db.from("finance_entries").insert({
-      company_id: "al_mether",
-      type,
-      title: title.trim(),
-      category,
-      amount: Number(amount),
-      status: type === "income" ? "Bekleyen Tahsilat" : "Bekleyen Ödeme",
-      created_by: user.email
-    });
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    setTitle("");
-    setAmount("");
-    await reload();
-  }
-
+export function FinanceModule({ user: _user }: FinanceModuleProps) {
   return (
     <div className="space-y-3.5">
-      <header className="mether-surface rounded-[26px] p-4 sm:p-5">
-        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-400/80">
-          Finance
+      <header className="mether-surface relative overflow-hidden rounded-[26px] p-5 sm:p-7">
+        <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-blue-400/80">
+              <WalletCards size={14} /> Finance
+            </div>
+            <h1 className="mt-3 text-3xl font-black tracking-[-0.045em] text-white sm:text-[38px]">Finans Merkezi</h1>
+            <p className="mt-3 max-w-2xl text-xs leading-6 text-slate-400 sm:text-[13px]">
+              AL METHER Finance; şirketinizin banka hesaplarını, tahsilatlarını, ödemelerini ve nakit akışını tek merkezden yönetmek için geliştirilmektedir.
+            </p>
+          </div>
+          <div className="flex w-fit items-center gap-2 rounded-xl border border-blue-400/15 bg-blue-500/[0.07] px-3 py-2 text-[10px] font-bold text-blue-300">
+            <ShieldCheck size={14} /> Platform vizyon aşaması
+          </div>
         </div>
-        <h1 className="mt-2 text-2xl font-black tracking-[-0.04em] text-white sm:text-[30px]">
-          Para yönetimi
-        </h1>
-        <p className="mt-1 text-xs text-slate-500">
-          Gelir, gider, tahsilat, ödeme ve ortak şirket bakiyesi.
-        </p>
       </header>
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric
-          label="Net bakiye"
-          value={formatTry(totals.balance)}
-          icon={<WalletCards size={17} />}
-          tone={totals.balance >= 0 ? "positive" : "negative"}
-          emphasis
-        />
-        <Metric label="Toplam gelir" value={formatTry(totals.income)} tone="positive" />
-        <Metric label="Toplam gider" value={formatTry(totals.expense)} tone="negative" />
-        <Metric label="Kayıt sayısı" value={String(entries.length)} />
-      </section>
-
-      <section className="grid gap-3.5 xl:grid-cols-[.78fr_1.22fr]">
-        <article className="mether-surface rounded-[24px] p-4">
-          <div className="flex items-center justify-between gap-3">
+      <section className="grid gap-3.5 lg:grid-cols-[1fr_1fr] xl:grid-cols-[.9fr_1.1fr]">
+        <article className="mether-surface rounded-[24px] p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-600">
-                New transaction
-              </div>
-              <h2 className="mt-1 text-lg font-bold text-white">
-                Finans kaydı
-              </h2>
+              <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-blue-400/70">Roadmap</div>
+              <h2 className="mt-2 text-xl font-black tracking-[-0.025em] text-white">Yakında</h2>
             </div>
-
-            <div className="flex rounded-xl border border-white/[0.07] bg-black/20 p-1">
-              <button
-                onClick={() => {
-                  setType("income");
-                  setCategory("Hakediş");
-                }}
-                className={`rounded-lg px-3 py-1.5 text-[10px] font-bold ${
-                  type === "income"
-                    ? "bg-emerald-500/15 text-emerald-300"
-                    : "text-slate-600"
-                }`}
-              >
-                Gelir
-              </button>
-
-              <button
-                onClick={() => {
-                  setType("expense");
-                  setCategory("Yakıt");
-                }}
-                className={`rounded-lg px-3 py-1.5 text-[10px] font-bold ${
-                  type === "expense"
-                    ? "bg-rose-500/15 text-rose-300"
-                    : "text-slate-600"
-                }`}
-              >
-                Gider
-              </button>
-            </div>
+            <div className="grid h-10 w-10 place-items-center rounded-xl border border-white/[0.06] bg-white/[0.035] text-blue-300"><Sparkles size={17} /></div>
           </div>
-
-          <div className="mt-4 space-y-2.5">
-            <input
-              value={title}
-              onChange={event => setTitle(event.target.value)}
-              className="mether-input h-11 rounded-xl px-3 text-sm"
-              placeholder="Açıklama"
-            />
-
-            <select
-              value={category}
-              onChange={event => setCategory(event.target.value)}
-              className="mether-input h-11 rounded-xl px-3 text-sm"
-            >
-              {type === "income" ? (
-                <>
-                  <option>Hakediş</option>
-                  <option>Fiber iş</option>
-                  <option>Tahsilat</option>
-                  <option>Ek iş</option>
-                </>
-              ) : (
-                <>
-                  <option>Yakıt</option>
-                  <option>Araç</option>
-                  <option>Personel</option>
-                  <option>Malzeme</option>
-                  <option>Fatura</option>
-                  <option>Diğer</option>
-                </>
-              )}
-            </select>
-
-            <input
-              value={amount}
-              onChange={event => setAmount(event.target.value)}
-              type="number"
-              className="mether-input h-11 rounded-xl px-3 text-sm"
-              placeholder="Tutar"
-            />
-
-            <button
-              onClick={() => void saveEntry()}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-500"
-            >
-              <Plus size={16} />
-              Kaydet
-            </button>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            {ROADMAP.map(item => (
+              <div key={item.label} className={`flex min-h-11 items-center gap-3 rounded-xl border px-3 ${item.ready ? "border-blue-400/20 bg-blue-500/[0.07]" : "border-white/[0.055] bg-white/[0.018]"}`}>
+                {item.ready ? <CheckCircle2 size={15} className="shrink-0 text-blue-300" /> : <Clock3 size={14} className="shrink-0 text-slate-600" />}
+                <span className={`text-[11px] font-bold ${item.ready ? "text-slate-200" : "text-slate-500"}`}>{item.label}</span>
+              </div>
+            ))}
           </div>
         </article>
 
-        <article className="mether-surface rounded-[24px] p-4">
-          <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-600">
-            Shared finance stream
+        <article className="mether-surface rounded-[24px] p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-blue-400/70">Banking Network</div>
+              <h2 className="mt-2 text-xl font-black tracking-[-0.025em] text-white">İlk Entegrasyonlar</h2>
+            </div>
+            <div className="grid h-10 w-10 place-items-center rounded-xl border border-white/[0.06] bg-white/[0.035] text-blue-300"><Network size={17} /></div>
           </div>
-          <h2 className="mt-1 text-lg font-bold text-white">
-            Ortak kayıtlar
-          </h2>
-
-          <div className="mether-scroll mt-3 max-h-[430px] overflow-auto">
-            {entries.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-white/[0.08] p-8 text-center text-xs text-slate-600">
-                Henüz ortak finans kaydı yok.
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            {BANKS.map(bank => (
+              <div key={bank} className="flex min-h-[54px] items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 transition hover:border-blue-400/15 hover:bg-blue-500/[0.035]">
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-blue-500/[0.08] text-blue-300"><Landmark size={15} /></div>
+                <span className="text-[11px] font-bold text-slate-300">{bank}</span>
               </div>
-            ) : (
-              <div className="divide-y divide-white/[0.06]">
-                {entries.map(entry => (
-                  <div
-                    key={entry.id}
-                    className="flex items-center justify-between gap-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate text-xs font-bold text-slate-200">
-                        {entry.title}
-                      </div>
-                      <div className="mt-1 truncate text-[10px] text-slate-600">
-                        {entry.category} · {entry.created_by} ·{" "}
-                        {new Date(entry.created_at).toLocaleString("tr-TR")}
-                      </div>
-                    </div>
-
-                    <div
-                      className={`shrink-0 text-xs font-black ${
-                        entry.type === "income"
-                          ? "text-emerald-400"
-                          : "text-rose-400"
-                      }`}
-                    >
-                      {entry.type === "income" ? "+" : "-"}
-                      {formatTry(Number(entry.amount))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
+          <p className="mt-4 rounded-xl border border-white/[0.055] bg-black/10 px-3 py-3 text-[10px] leading-5 text-slate-500">
+            İlk sürümde banka entegrasyonları canlı olarak desteklenecektir.
+          </p>
         </article>
       </section>
+
+      <article className="mether-surface overflow-hidden rounded-[24px]">
+        <div className="grid lg:grid-cols-[.85fr_1.15fr]">
+          <div className="border-b border-white/[0.06] p-5 sm:p-7 lg:border-b-0 lg:border-r">
+            <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.18em] text-blue-400/70"><BrainCircuit size={14} /> Platform Vision</div>
+            <h2 className="mt-3 text-2xl font-black tracking-[-0.035em] text-white">AL METHER Finance</h2>
+            <p className="mt-4 text-xs leading-6 text-slate-400">
+              Finance; manuel veri girilen bir muhasebe ekranı değildir.
+            </p>
+            <p className="mt-3 text-xs leading-6 text-slate-500">
+              Şirketinizin tüm banka hareketlerini, tahsilatlarını, ödemelerini ve finansal süreçlerini tek merkezden yönetmek üzere tasarlanmıştır.
+            </p>
+          </div>
+          <div className="p-5 sm:p-7">
+            <div className="text-[10px] font-bold text-slate-400">İlerleyen sürümlerde</div>
+            <div className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+              {VISION_FEATURES.map(feature => (
+                <div key={feature} className="flex items-center gap-2.5 text-[11px] font-semibold text-slate-500">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400/60" />{feature}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <footer className="rounded-[18px] border border-white/[0.06] bg-white/[0.018] px-4 py-3 text-center text-[9px] leading-5 text-slate-600 sm:px-6">
+        Finance modülü, AL METHER Company Platform&apos;un son aşama modüllerinden biridir. Mevcut ekran platform vizyonunu temsil eder; banka entegrasyonları ve AI finans motoru tamamlandığında tam işlevsel hale gelecektir.
+      </footer>
     </div>
   );
 }
