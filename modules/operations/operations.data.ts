@@ -15,7 +15,7 @@ export const OPERATION_PROJECTS: readonly OperationProject[] = [
     buildings: 284,
     startDate: "01 Tem 2026",
     estimatedEndDate: "28 Tem 2026",
-    coordinates: { x: 35, y: 42 }
+    coordinates: { lat: 38.4554, lng: 27.1197 }
   },
   {
     id: "izmir-bornova-086",
@@ -31,7 +31,7 @@ export const OPERATION_PROJECTS: readonly OperationProject[] = [
     buildings: 196,
     startDate: "06 Tem 2026",
     estimatedEndDate: "04 Ağu 2026",
-    coordinates: { x: 62, y: 34 }
+    coordinates: { lat: 38.4622, lng: 27.2165 }
   },
   {
     id: "izmir-gaziemir-101",
@@ -47,7 +47,7 @@ export const OPERATION_PROJECTS: readonly OperationProject[] = [
     buildings: 148,
     startDate: "18 Haz 2026",
     estimatedEndDate: "15 Tem 2026",
-    coordinates: { x: 51, y: 68 }
+    coordinates: { lat: 38.3213, lng: 27.1297 }
   }
 ] as const;
 

@@ -1,3 +1,5 @@
+import type { MapCoordinate } from "@/core/map/types";
+
 export type OperationProjectStatus = "Sahada" | "Planlama" | "Teslim";
 
 export type OperationProject = {
@@ -14,7 +16,7 @@ export type OperationProject = {
   buildings: number;
   startDate: string;
   estimatedEndDate: string;
-  coordinates: { x: number; y: number };
+  coordinates: MapCoordinate;
 };
 
 export type OperationsKPI = {

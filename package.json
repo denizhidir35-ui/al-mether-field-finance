@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@googlemaps/js-api-loader": "^2.1.1",
     "@supabase/supabase-js": "^2.57.4",
     "imapflow": "^1.4.7",
     "lucide-react": "^0.468.0",
@@ -20,6 +21,7 @@
     "sanitize-html": "^2.17.6"
   },
   "devDependencies": {
+    "@types/google.maps": "^3.65.2",
     "@types/mailparser": "^3.4.6",
     "@types/node": "^22.10.2",
     "@types/nodemailer": "^8.0.1",
