@@ -186,6 +186,17 @@ button {
   -webkit-line-clamp: 3;
 }
 
+.operations-viewport {
+  height: calc(100dvh - 63px);
+  overflow: hidden;
+  padding-bottom: 78px;
+}
+
+.operations-viewport .module-viewport-content {
+  height: 100%;
+  min-height: 0;
+}
+
 @media (min-width: 1280px) {
   .finance-viewport {
     height: calc(100vh - 63px);
@@ -193,8 +204,9 @@ button {
     padding-bottom: 78px;
   }
 
-  .finance-viewport-content {
+  .module-viewport-content {
     height: 100%;
     min-height: 0;
   }
+
 }
