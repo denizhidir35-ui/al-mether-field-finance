@@ -42,9 +42,10 @@ export function GoogleMapProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[GoogleMapProvider] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY length: ${apiKey.length}`);
-    }
+    console.log("[GoogleMapProvider] Google Maps environment", {
+      env: Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
+      length: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.length
+    });
 
     if (!apiKey) {
       setError("Google Maps API anahtarı yapılandırılmadı.");
