@@ -5,6 +5,7 @@ import type { AppUser } from "@/types/auth";
 import type { ModuleId } from "@/core/navigation/navigation.types";
 import { TopBar } from "./TopBar";
 import { BottomDock } from "./BottomDock";
+import { MobileNavigation } from "./MobileNavigation";
 
 type AppShellProps = {
   user: AppUser;
@@ -30,6 +31,7 @@ export function AppShell({
       </main>
 
       <BottomDock activeModule={activeModule} onChange={onChange} />
+      <MobileNavigation activeModule={activeModule} onChange={onChange} />
     </div>
   );
 }

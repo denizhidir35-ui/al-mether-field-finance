@@ -7,7 +7,7 @@ function SummaryValue({ label, value }: { label: string; value: string }) {
 
 export function ProjectSummary({ project }: { project: OperationProject }) {
   return (
-    <article className="mether-surface min-h-0 rounded-[22px] p-2.5">
+    <article className="mether-scroll mether-surface h-full min-h-0 overflow-y-auto rounded-[22px] p-2.5">
       <header><div className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-[0.17em] text-blue-400/70"><ServerCog size={12} /> Seçilen Proje</div><h2 className="mt-1.5 text-[14px] font-black leading-5 text-white">{project.name}</h2><div className="mt-1 flex items-center gap-1 text-[8px] text-slate-500"><MapPinned size={9} /> {project.city} · {project.district} · Ada {project.island}</div></header>
       <div className="mt-2 grid grid-cols-3 gap-1.5"><SummaryValue label="Sokak" value={String(project.streets)} /><SummaryValue label="DK" value={String(project.distributionBoxes)} /><SummaryValue label="Bina" value={String(project.buildings)} /></div>
       <div className="mt-1.5 grid grid-cols-2 gap-1.5"><SummaryValue label="Başlama" value={project.startDate} /><SummaryValue label="Tahmini Bitiş" value={project.estimatedEndDate} /></div>

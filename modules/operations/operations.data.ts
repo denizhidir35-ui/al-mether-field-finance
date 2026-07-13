@@ -52,18 +52,18 @@ export const OPERATION_PROJECTS: readonly OperationProject[] = [
 ] as const;
 
 export const OPERATIONS_KPIS: readonly OperationsKPI[] = [
-  { label: "Aktif Proje", value: "3", detail: "2 sahada, 1 teslimde" },
-  { label: "Aktif Şef", value: "3", detail: "Tümü çevrimiçi" },
-  { label: "Aktif Personel", value: "15", detail: "12 personel sahada" },
-  { label: "Bugün Tamamlanan Bina", value: "24", detail: "+6 son iki saatte" },
-  { label: "Devam Eden Operasyon", value: "8", detail: "3 kritik iş akışı" },
-  { label: "Toplam Sokak", value: "39", detail: "21 sokak tamamlandı" }
+  { label: "Aktif Proje", mobileLabel: "Projeler", value: "3", detail: "2 sahada, 1 teslimde" },
+  { label: "Aktif Şef", mobileLabel: "Şefler", value: "3", detail: "Tümü çevrimiçi" },
+  { label: "Aktif Personel", mobileLabel: "Personel", value: "15", detail: "12 personel sahada" },
+  { label: "Bugün Tamamlanan Bina", mobileLabel: "Bina / Bugün", value: "24", detail: "+6 son iki saatte" },
+  { label: "Devam Eden Operasyon", mobileLabel: "Operasyon", value: "8", detail: "3 kritik iş akışı" },
+  { label: "Toplam Sokak", mobileLabel: "Sokaklar", value: "39", detail: "21 sokak tamamlandı" }
 ] as const;
 
 export const DAILY_OPERATION_METRICS: readonly DailyOperationMetric[] = [
-  { label: "Tamamlanan Binalar", value: "24" },
-  { label: "Devam Edenler", value: "11" },
-  { label: "Bekleyenler", value: "7" },
-  { label: "Toplam Fotoğraf", value: "186" },
-  { label: "Tamamlanan Sokak", value: "4" }
+  { label: "Tamamlanan Binalar", mobileLabel: "Bina", value: "24" },
+  { label: "Devam Edenler", mobileLabel: "Devam", value: "11" },
+  { label: "Bekleyenler", mobileLabel: "Bekleyen", value: "7" },
+  { label: "Toplam Fotoğraf", mobileLabel: "Fotoğraf", value: "186" },
+  { label: "Tamamlanan Sokak", mobileLabel: "Sokak", value: "4" }
 ] as const;

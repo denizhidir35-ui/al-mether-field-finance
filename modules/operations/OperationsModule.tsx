@@ -24,9 +24,9 @@ export function OperationsModule({ user: _user }: { user: AppUser }) {
         {([{ id: "projects", label: "Projeler", icon: FolderKanban }, { id: "map", label: "Harita", icon: Map }, { id: "summary", label: "Proje Özeti", icon: PanelRight }] as const).map(item => { const Icon = item.icon; const active = activePanel === item.id; return <button key={item.id} type="button" onClick={() => setActivePanel(item.id)} className={`flex h-7 items-center justify-center gap-1.5 rounded-lg text-[8px] font-bold transition ${active ? "bg-blue-500/15 text-blue-300" : "text-slate-600"}`}><Icon size={11} />{item.label}</button>; })}
       </nav>
       <section className="grid min-h-0 gap-2.5 xl:grid-cols-[.78fr_1.42fr_.9fr]">
-        <div className={`min-h-0 ${activePanel === "projects" ? "block" : "hidden"} xl:block`}><ProjectsList projects={OPERATION_PROJECTS} selectedId={selectedProject.id} onSelect={project => { setSelectedProject(project); setActivePanel("summary"); }} /></div>
-        <div className={`min-h-0 ${activePanel === "map" ? "block" : "hidden"} xl:block`}><OperationMapCard projects={OPERATION_PROJECTS} selectedId={selectedProject.id} onSelect={project => { setSelectedProject(project); setActivePanel("summary"); }} /></div>
-        <div className={`min-h-0 ${activePanel === "summary" ? "block" : "hidden"} xl:block`}><ProjectSummary project={selectedProject} /></div>
+        <div className={`h-full min-h-0 overflow-hidden ${activePanel === "projects" ? "block" : "hidden"} xl:block`}><ProjectsList projects={OPERATION_PROJECTS} selectedId={selectedProject.id} onSelect={project => { setSelectedProject(project); setActivePanel("summary"); }} /></div>
+        <div className={`h-full min-h-0 overflow-hidden ${activePanel === "map" ? "block" : "hidden"} xl:block`}><OperationMapCard projects={OPERATION_PROJECTS} selectedId={selectedProject.id} onSelect={project => { setSelectedProject(project); setActivePanel("summary"); }} /></div>
+        <div className={`h-full min-h-0 overflow-hidden ${activePanel === "summary" ? "block" : "hidden"} xl:block`}><ProjectSummary project={selectedProject} /></div>
       </section>
       <DailyOperationCard metrics={DAILY_OPERATION_METRICS} />
     </div>

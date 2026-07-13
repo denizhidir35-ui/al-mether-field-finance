@@ -9,7 +9,7 @@ type ProjectsListProps = {
 
 export function ProjectsList({ projects, selectedId, onSelect }: ProjectsListProps) {
   return (
-    <article className="mether-surface flex min-h-0 flex-col rounded-[22px] p-3.5">
+    <article className="mether-surface flex h-full min-h-0 flex-col overflow-hidden rounded-[22px] p-3.5">
       <header className="flex items-center justify-between px-1"><div><div className="text-[8px] font-bold uppercase tracking-[0.18em] text-blue-400/70">Project Pipeline</div><h2 className="mt-1 text-[15px] font-black text-white">Aktif Projeler</h2></div><span className="rounded-lg border border-white/[0.06] bg-white/[0.025] px-2 py-1 text-[8px] font-bold text-slate-500">{projects.length} proje</span></header>
       <div className="mether-scroll mt-3 min-h-0 space-y-2 overflow-y-auto pr-1">
         {projects.map(project => {

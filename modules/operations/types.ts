@@ -19,11 +19,13 @@ export type OperationProject = {
 
 export type OperationsKPI = {
   label: string;
+  mobileLabel: string;
   value: string;
   detail: string;
 };
 
 export type DailyOperationMetric = {
   label: string;
+  mobileLabel: string;
   value: string;
 };
