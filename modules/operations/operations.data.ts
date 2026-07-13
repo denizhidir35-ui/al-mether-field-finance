@@ -1,4 +1,4 @@
-import type { DailyOperationMetric, OperationProject, OperationsKPI } from "./types";
+import type { OperationProject, OperationsKPI } from "./types";
 
 export const OPERATION_PROJECTS: readonly OperationProject[] = [
   {
@@ -58,12 +58,4 @@ export const OPERATIONS_KPIS: readonly OperationsKPI[] = [
   { label: "Bugün Tamamlanan Bina", mobileLabel: "Bina / Bugün", value: "24", detail: "+6 son iki saatte" },
   { label: "Devam Eden Operasyon", mobileLabel: "Operasyon", value: "8", detail: "3 kritik iş akışı" },
   { label: "Toplam Sokak", mobileLabel: "Sokaklar", value: "39", detail: "21 sokak tamamlandı" }
-] as const;
-
-export const DAILY_OPERATION_METRICS: readonly DailyOperationMetric[] = [
-  { label: "Tamamlanan Binalar", mobileLabel: "Bina", value: "24" },
-  { label: "Devam Edenler", mobileLabel: "Devam", value: "11" },
-  { label: "Bekleyenler", mobileLabel: "Bekleyen", value: "7" },
-  { label: "Toplam Fotoğraf", mobileLabel: "Fotoğraf", value: "186" },
-  { label: "Tamamlanan Sokak", mobileLabel: "Sokak", value: "4" }
 ] as const;

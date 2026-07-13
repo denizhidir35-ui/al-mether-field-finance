@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { FolderKanban, Map, PanelRight } from "lucide-react";
 import type { AppUser } from "@/types/auth";
-import { DailyOperationCard } from "./components/DailyOperationCard";
 import { OperationMapCard } from "./components/OperationMapCard";
 import { OperationsHeader } from "./components/OperationsHeader";
 import { OperationsKPIs } from "./components/OperationsKPIs";
 import { ProjectsList } from "./components/ProjectsList";
 import { ProjectSummary } from "./components/ProjectSummary";
-import { DAILY_OPERATION_METRICS, OPERATION_PROJECTS, OPERATIONS_KPIS } from "./operations.data";
+import { OPERATION_PROJECTS, OPERATIONS_KPIS } from "./operations.data";
 import type { OperationProject } from "./types";
 
 export function OperationsModule({ user: _user }: { user: AppUser }) {
@@ -17,7 +16,7 @@ export function OperationsModule({ user: _user }: { user: AppUser }) {
   const [activePanel, setActivePanel] = useState<"projects" | "map" | "summary">("map");
 
   return (
-    <div className="operations-dashboard grid h-full min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)_auto] gap-1.5 xl:grid-rows-[auto_auto_minmax(0,1fr)_auto] xl:gap-2.5">
+    <div className="operations-dashboard grid h-full min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] gap-1.5 xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:gap-2.5">
       <OperationsHeader />
       <OperationsKPIs items={OPERATIONS_KPIS} />
       <nav aria-label="Operations panel seçimi" className="grid grid-cols-3 gap-1 rounded-xl border border-white/[0.06] bg-black/10 p-1 xl:hidden">
@@ -28,7 +27,6 @@ export function OperationsModule({ user: _user }: { user: AppUser }) {
         <div className={`h-full min-h-0 overflow-hidden ${activePanel === "map" ? "block" : "hidden"} xl:block`}><OperationMapCard projects={OPERATION_PROJECTS} selectedId={selectedProject.id} onSelect={project => { setSelectedProject(project); setActivePanel("summary"); }} /></div>
         <div className={`h-full min-h-0 overflow-hidden ${activePanel === "summary" ? "block" : "hidden"} xl:block`}><ProjectSummary project={selectedProject} /></div>
       </section>
-      <DailyOperationCard metrics={DAILY_OPERATION_METRICS} />
     </div>
   );
 }

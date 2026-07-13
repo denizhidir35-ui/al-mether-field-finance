@@ -23,9 +23,3 @@ export type OperationsKPI = {
   value: string;
   detail: string;
 };
-
-export type DailyOperationMetric = {
-  label: string;
-  mobileLabel: string;
-  value: string;
-};
