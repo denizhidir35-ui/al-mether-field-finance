@@ -185,3 +185,16 @@ button {
 .group:hover .mail-row-preview {
   -webkit-line-clamp: 3;
 }
+
+@media (min-width: 1280px) {
+  .finance-viewport {
+    height: calc(100vh - 63px);
+    overflow: hidden;
+    padding-bottom: 78px;
+  }
+
+  .finance-viewport-content {
+    height: 100%;
+    min-height: 0;
+  }
+}
