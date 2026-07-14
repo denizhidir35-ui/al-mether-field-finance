@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "typecheck": "tsc --noEmit",
+    "test:operations": "node --experimental-transform-types --test modules/operations/engine/operation-engine.test.ts",
     "start": "next start"
   },
   "dependencies": {

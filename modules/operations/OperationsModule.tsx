@@ -9,7 +9,6 @@ import { OperationsKPIs } from "./components/OperationsKPIs";
 import { ProjectsList } from "./components/ProjectsList";
 import { ProjectSummary } from "./components/ProjectSummary";
 import { ChiefConsole } from "./chief/ChiefConsole";
-import { OperationsProvider } from "./hooks/OperationsProvider";
 import { useOperationsReadModel } from "./hooks/useOperationsReadModel";
 
 function OperationsContent({ user }: { user: AppUser }) {
@@ -30,7 +29,7 @@ function OperationsContent({ user }: { user: AppUser }) {
       </nav>
       <section className="grid min-h-0 gap-2.5 xl:grid-cols-[.78fr_1.42fr_.9fr]">
         <div className={`h-full min-h-0 overflow-hidden ${activePanel === "projects" ? "block" : "hidden"} xl:block`}><ProjectsList projects={readModel.projects} selectedId={selectedProject.id} onSelect={project => { setSelectedProjectId(project.id); setActivePanel("summary"); }} /></div>
-        <div className={`h-full min-h-0 overflow-hidden ${activePanel === "map" ? "block" : "hidden"} xl:block`}><OperationMapCard projects={readModel.projects} selectedId={selectedProject.id} onSelect={project => { setSelectedProjectId(project.id); setActivePanel("summary"); }} /></div>
+        <div className={`h-full min-h-0 overflow-hidden ${activePanel === "map" ? "block" : "hidden"} xl:block`}><OperationMapCard projects={readModel.projects} projectedMarkers={readModel.mapMarkers} selectedId={selectedProject.id} onSelect={project => { setSelectedProjectId(project.id); setActivePanel("summary"); }} /></div>
         <div className={`h-full min-h-0 overflow-hidden ${activePanel === "summary" ? "block" : "hidden"} xl:block`}><ProjectSummary project={selectedProject} /></div>
       </section>
     </div>
@@ -38,5 +37,5 @@ function OperationsContent({ user }: { user: AppUser }) {
 }
 
 export function OperationsModule({ user }: { user: AppUser }) {
-  return <OperationsProvider><OperationsContent user={user} /></OperationsProvider>;
+  return <OperationsContent user={user} />;
 }

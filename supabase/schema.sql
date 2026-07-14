@@ -26,7 +26,7 @@ create table if not exists profiles (
   company_id text not null references companies(id) on delete cascade,
   email text not null unique,
   display_name text not null,
-  role text not null default 'ASSISTANT' check (role in ('CEO', 'PARTNER', 'ASSISTANT')),
+  role text not null default 'ASSISTANT' check (role in ('CEO', 'PARTNER', 'ASSISTANT', 'MANAGER', 'CHIEF', 'PERSONNEL')),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -40,6 +40,11 @@ alter table profiles add column if not exists role text default 'ASSISTANT';
 alter table profiles add column if not exists is_active boolean default true;
 alter table profiles add column if not exists created_at timestamptz default now();
 alter table profiles add column if not exists updated_at timestamptz default now();
+
+-- Keep role authorization aligned with the application role model.
+alter table profiles drop constraint if exists profiles_role_check;
+alter table profiles add constraint profiles_role_check
+  check (role in ('CEO', 'PARTNER', 'ASSISTANT', 'MANAGER', 'CHIEF', 'PERSONNEL'));
 
 create or replace function is_company_member(target_company_id text)
 returns boolean

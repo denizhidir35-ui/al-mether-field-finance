@@ -57,8 +57,8 @@ export function buildChiefExperienceViewModel(chief: ChiefAccount, project: Oper
         tone: workflow.completedSteps.includes("deka") ? "complete" : dekaReady ? "active" : "passive",
         metrics: [dekaReady ? "Hazır" : "Personel bekleniyor", "GPS OK", workflow.completedSteps.includes("deka") ? "Tamamlandı" : "Başlat"]
       },
-      { id: "team", title: "Takım", tone: "warning", metrics: ["2 okunmamış", "Son mesaj", "Ekip hazır"] },
-      { id: "problem", title: "Problem", tone: project.supportCount > 0 ? "critical" : "active", metrics: ["0 kritik", "1 açık", "Yeni problem"] }
+      { id: "team", title: "Takım", tone: workflow.unreadMessageCount > 0 ? "warning" : "active", metrics: [`${workflow.unreadMessageCount} okunmamış`, "Son mesaj", "Ekip hazır"] },
+      { id: "problem", title: "Problem", tone: workflow.criticalProblemCount > 0 ? "critical" : "active", metrics: [`${workflow.criticalProblemCount} kritik`, `${workflow.supportCount} açık`, "Yeni problem"] }
     ],
     motivation: { leaderCode: "MTHR002", leaderProgress: 81, chiefCode: chief.personnelCode, chiefProgress: project.progress }
   };

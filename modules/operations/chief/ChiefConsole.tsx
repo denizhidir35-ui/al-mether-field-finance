@@ -71,14 +71,14 @@ function AuthenticatedChiefConsole({ chief, project, onLogout }: { chief: ChiefA
   );
 }
 
-export function ChiefConsole({ onExit: _onExit }: { onExit?: () => void }) {
+export function ChiefConsole({ onExit }: { onExit?: () => void }) {
   const auth = useChiefAuth();
   const readModel = useOperationsReadModel();
   useEffect(() => {
     document.body.dataset.chiefConsoleOpen = "true";
     return () => { delete document.body.dataset.chiefConsoleOpen; };
   }, []);
-  if (!auth.chief) return <div className="fixed inset-0 z-[80] overflow-hidden bg-[#030816] py-3 sm:py-5"><ChiefLogin error={auth.error} onLogin={auth.login} /></div>;
+  if (!auth.chief) return <div className="fixed inset-0 z-[80] overflow-hidden bg-[#030816] py-3 sm:py-5"><ChiefLogin error={auth.error} onLogin={auth.login} onExit={onExit} /></div>;
   const project = findChiefProject(auth.chief, readModel.projects);
   return <div className="fixed inset-0 z-[80] overflow-hidden bg-[#030816] pb-[env(safe-area-inset-bottom)] pt-[max(.5rem,env(safe-area-inset-top))] sm:py-3"><AuthenticatedChiefConsole chief={auth.chief} project={project} onLogout={auth.logout} /></div>;
 }

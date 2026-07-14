@@ -1,4 +1,4 @@
-import { CHIEF_WORKFLOW_DEFINITION } from "./workflow.definition";
+import { CHIEF_WORKFLOW_DEFINITION } from "./workflow.definition.ts";
 import type { WorkflowState } from "./workflow.types";
 
 export function calculateWorkflowProgress(state: WorkflowState) {

@@ -5,11 +5,10 @@ import { Map } from "lucide-react";
 import { MapEngine } from "@/components/map/MapEngine";
 import type { MapEngineHandle, MapLegendItem, MapMarker } from "@/core/map/types";
 import type { OperationProject } from "../types";
-import { toOperationMapMarkers } from "../map/operation-map.adapter";
 
-export function OperationMapCard({ projects, selectedId, onSelect }: { projects: readonly OperationProject[]; selectedId: string; onSelect: (project: OperationProject) => void }) {
+export function OperationMapCard({ projects, projectedMarkers, selectedId, onSelect }: { projects: readonly OperationProject[]; projectedMarkers: readonly MapMarker[]; selectedId: string; onSelect: (project: OperationProject) => void }) {
   const mapRef = useRef<MapEngineHandle>(null);
-  const markers = useMemo<readonly MapMarker[]>(() => toOperationMapMarkers(projects, selectedId), [projects, selectedId]);
+  const markers = useMemo<readonly MapMarker[]>(() => projectedMarkers.map(marker => ({ ...marker, active: marker.id === selectedId })), [projectedMarkers, selectedId]);
   const legend = useMemo<readonly MapLegendItem[]>(() => [
     { id: "selected", label: "Seçili proje", tone: "active" },
     { id: "field", label: "Sahada", tone: "default" },

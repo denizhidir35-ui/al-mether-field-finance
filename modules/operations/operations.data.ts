@@ -1,3 +1,4 @@
+import type { WorkOrder } from "./domain/work-order";
 import type { OperationProject } from "./types";
 
 export const OPERATION_PROJECTS: readonly OperationProject[] = [
@@ -72,5 +73,62 @@ export const OPERATION_PROJECTS: readonly OperationProject[] = [
     supportCount: 0,
     photoCount: 46,
     markerStatus: "completed"
+  }
+] as const;
+
+export const OPERATION_WORK_ORDERS: readonly WorkOrder[] = [
+  {
+    id: "work-order-alm-000001",
+    code: "ALM-000001",
+    customerName: "AL METHER Fiber",
+    projectCode: "ALM-0001",
+    operationType: "fiber_deployment",
+    chiefId: "chief-mthr001",
+    personnelIds: ["MTHR011", "MTHR012", "MTHR013", "MTHR014", "MTHR015"],
+    workflowId: "chief-fiber-v1",
+    targetCodes: ["TGT-0001"],
+    plannedStartAt: "2026-07-01T06:00:00.000Z",
+    estimatedEndAt: "2026-07-28T15:00:00.000Z",
+    priority: "high",
+    attachmentIds: [],
+    status: "active",
+    assignedAt: "2026-06-30T12:00:00.000Z",
+    startedAt: "2026-07-01T06:00:00.000Z"
+  },
+  {
+    id: "work-order-alm-000002",
+    code: "ALM-000002",
+    customerName: "AL METHER Fiber",
+    projectCode: "ALM-0002",
+    operationType: "infrastructure_survey",
+    chiefId: "chief-mthr002",
+    personnelIds: ["MTHR021", "MTHR022", "MTHR023", "MTHR024"],
+    workflowId: "chief-fiber-v1",
+    targetCodes: ["TGT-0002"],
+    plannedStartAt: "2026-07-06T06:00:00.000Z",
+    estimatedEndAt: "2026-08-04T15:00:00.000Z",
+    priority: "normal",
+    attachmentIds: [],
+    status: "active",
+    assignedAt: "2026-07-05T12:00:00.000Z",
+    startedAt: "2026-07-06T06:00:00.000Z"
+  },
+  {
+    id: "work-order-alm-000003",
+    code: "ALM-000003",
+    customerName: "AL METHER Fiber",
+    projectCode: "ALM-0003",
+    operationType: "field_delivery",
+    chiefId: "chief-mthr003",
+    personnelIds: ["MTHR031", "MTHR032", "MTHR033"],
+    workflowId: "chief-fiber-v1",
+    targetCodes: ["TGT-0003"],
+    plannedStartAt: "2026-06-18T06:00:00.000Z",
+    estimatedEndAt: "2026-07-15T15:00:00.000Z",
+    priority: "normal",
+    attachmentIds: [],
+    status: "active",
+    assignedAt: "2026-06-17T12:00:00.000Z",
+    startedAt: "2026-06-18T06:00:00.000Z"
   }
 ] as const;

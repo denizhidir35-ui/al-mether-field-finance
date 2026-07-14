@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Fingerprint, ShieldCheck } from "lucide-react";
 
-export function ChiefLogin({ error, onLogin }: { error: string | null; onLogin: (personnelNumber: string, password: string) => Promise<boolean> }) {
+export function ChiefLogin({ error, onLogin, onExit }: { error: string | null; onLogin: (personnelNumber: string, password: string) => Promise<boolean>; onExit?: () => void }) {
   const [personnelNumber, setPersonnelNumber] = useState("MTHR001");
   const [password, setPassword] = useState("1234");
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,11 @@ export function ChiefLogin({ error, onLogin }: { error: string | null; onLogin: 
         <div className="mt-5 text-[9px] font-black uppercase tracking-[0.22em] text-blue-400/75">AL METHER · Chief</div>
         <h1 className="mt-2 text-2xl font-black tracking-[-0.04em] text-white">Saha Operasyonları</h1>
         <p className="mt-2 text-[10px] leading-5 text-slate-500">Personel numaranla operasyon konsoluna gir.</p>
-        <label className="mt-6 block text-[8px] font-bold uppercase tracking-[0.14em] text-slate-500">Personel No<input value={personnelNumber} onChange={event => setPersonnelNumber(event.target.value.toUpperCase())} autoComplete="username" className="mt-2 h-12 w-full rounded-2xl border border-white/[0.07] bg-black/20 px-4 text-sm font-bold text-white outline-none transition focus:border-blue-400/35" /></label>
+        <div className="mt-5 grid grid-cols-2 rounded-2xl border border-white/[0.07] bg-black/20 p-1" aria-label="Giriş rolü">
+          <button type="button" onClick={onExit} className="h-10 rounded-xl text-[10px] font-bold text-slate-500 transition hover:bg-white/[0.04] hover:text-blue-300">CEO</button>
+          <button type="button" aria-pressed="true" className="h-10 rounded-xl bg-blue-600 text-[10px] font-black text-white shadow-[0_8px_22px_rgba(37,99,235,.22)]">Şef</button>
+        </div>
+        <label className="mt-5 block text-[8px] font-bold uppercase tracking-[0.14em] text-slate-500">Personel No<input value={personnelNumber} onChange={event => setPersonnelNumber(event.target.value.toUpperCase())} autoComplete="username" className="mt-2 h-12 w-full rounded-2xl border border-white/[0.07] bg-black/20 px-4 text-sm font-bold text-white outline-none transition focus:border-blue-400/35" /></label>
         <label className="mt-3 block text-[8px] font-bold uppercase tracking-[0.14em] text-slate-500">Şifre<input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" className="mt-2 h-12 w-full rounded-2xl border border-white/[0.07] bg-black/20 px-4 text-sm font-bold text-white outline-none transition focus:border-blue-400/35" /></label>
         {error ? <div className="mt-3 rounded-xl border border-rose-400/15 bg-rose-500/[0.07] px-3 py-2 text-[9px] font-bold text-rose-300">{error}</div> : null}
         <button disabled={loading} className="mt-5 flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 text-[11px] font-black text-white shadow-[0_14px_35px_rgba(37,99,235,.28)] disabled:opacity-50"><ShieldCheck size={16} />{loading ? "Doğrulanıyor" : "Operasyona Gir"}</button>

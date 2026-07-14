@@ -1,5 +1,12 @@
 # AL METHER Company Platform
 
+## Architecture
+
+All operational modules are governed by the immutable
+[Operation Engine Golden Rule](docs/architecture/operation-engine-golden-rule.md).
+No Operations feature may start before its `WorkOrder -> Event -> Reducer -> Read Model`
+integration is explicitly defined.
+
 ## Local development
 
 1. Copy `.env.example` to `.env.local`.

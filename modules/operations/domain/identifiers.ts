@@ -1,6 +1,8 @@
 export type PersonnelCode = `MTHR${string}`;
 export type ProjectCode = `ALM-${string}`;
 export type TargetCode = `TGT-${string}`;
+export type WorkOrderCode = `ALM-${string}`;
+export type WorkOrderId = `work-order-${string}`;
 
 export const OPERATION_CODE_PATTERNS = {
   personnel: /^MTHR\d{3}$/,

@@ -10,7 +10,7 @@ import type { ModuleId } from "@/core/navigation/navigation.types";
 import { ChiefConsole } from "@/modules/operations/chief/ChiefConsole";
 import { OperationsProvider } from "@/modules/operations/hooks/OperationsProvider";
 
-export default function HomePage() {
+function HomePageContent() {
   const { user, initialized, startSession, endSession } = useAppSession();
   const [activeModule, setActiveModule] = useState<ModuleId>("dashboard");
   const [showIntro, setShowIntro] = useState(false);
@@ -19,7 +19,7 @@ export default function HomePage() {
   if (!initialized) return null;
 
   if (!user && showChiefAccess) {
-    return <OperationsProvider><ChiefConsole onExit={() => setShowChiefAccess(false)} /></OperationsProvider>;
+    return <ChiefConsole onExit={() => setShowChiefAccess(false)} />;
   }
 
   if (!user) {
@@ -38,5 +38,13 @@ export default function HomePage() {
         <ModuleRenderer activeModule={activeModule} user={user} onNavigate={setActiveModule} />
       </AppShell>
     </>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <OperationsProvider>
+      <HomePageContent />
+    </OperationsProvider>
   );
 }

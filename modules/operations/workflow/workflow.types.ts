@@ -15,6 +15,14 @@ export type WorkflowState = {
   evidence: readonly OperationEvidence[];
   checkpoints: readonly QualityCheckpointId[];
   supportCount: number;
+  criticalProblemCount: number;
+  unreadMessageCount: number;
+  personnelStatus: "pending" | "scanning" | "confirmed";
+  workOrderStatus: "assigned" | "active" | "completed";
+  markerStatus: "idle" | "active" | "attention" | "completed";
+  notifications: readonly { id: string; message: string; occurredAt: string }[];
+  processedEventIds: readonly string[];
+  processedDeduplicationKeys: readonly string[];
   latestOperation: string;
   completedAt?: string;
 };
