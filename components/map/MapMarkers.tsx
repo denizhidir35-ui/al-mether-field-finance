@@ -14,9 +14,9 @@ export function MapMarkers({ map, markerLibrary, markers, onMarkerClick }: { map
   useEffect(() => {
     const instances = markers.map(marker => {
       const content = document.createElement("button");
-      const tone = marker.active ? "active" : (marker.tone ?? "default");
+      const tone = marker.tone ?? "default";
       content.type = "button";
-      content.className = `grid min-h-9 min-w-9 place-items-center rounded-full border px-2 text-[9px] font-black transition ${TONE_CLASSES[tone]}`;
+      content.className = `grid min-h-9 min-w-9 place-items-center rounded-full border px-2 text-[9px] font-black transition ${TONE_CLASSES[tone]} ${marker.active ? "ring-2 ring-blue-100/80 ring-offset-2 ring-offset-[#07101f]" : ""}`;
       content.textContent = marker.label ?? "•";
       content.setAttribute("aria-label", marker.title ?? marker.label ?? "Harita işareti");
 

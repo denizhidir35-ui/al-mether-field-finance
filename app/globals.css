@@ -210,3 +210,17 @@ button {
   }
 
 }
+body[data-chief-console-open="true"] [data-app-shell-chrome] {
+  display: none !important;
+}
+
+body[data-chief-console-open="true"] [data-app-shell-main] {
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  padding: 0 !important;
+}
+
+body[data-chief-console-open="true"] [data-app-shell-main] > div {
+  height: 100%;
+  max-width: none;
+}

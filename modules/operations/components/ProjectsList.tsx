@@ -16,10 +16,10 @@ export function ProjectsList({ projects, selectedId, onSelect }: ProjectsListPro
           const active = project.id === selectedId;
           return (
             <button key={project.id} type="button" onClick={() => onSelect(project)} className={`w-full rounded-[16px] border p-3 text-left transition ${active ? "border-blue-400/25 bg-blue-500/[0.08] shadow-[0_10px_30px_rgba(37,99,235,.08)]" : "border-white/[0.055] bg-black/10 hover:border-blue-400/15 hover:bg-white/[0.025]"}`}>
-              <div className="flex items-start justify-between gap-2"><div className="min-w-0"><div className="truncate text-[10px] font-bold text-slate-200">{project.name}</div><div className="mt-1 flex items-center gap-1 text-[8px] text-slate-500"><MapPin size={9} /> {project.city} · {project.district} · Ada {project.island}</div></div><ChevronRight size={13} className={active ? "text-blue-300" : "text-slate-700"} /></div>
+              <div className="flex items-start justify-between gap-2"><div className="min-w-0"><div className="text-[8px] font-black uppercase tracking-[0.12em] text-blue-400/70">{project.code}</div><div className="mt-0.5 truncate text-[10px] font-bold text-slate-200">{project.name}</div><div className="mt-1 flex items-center gap-1 text-[8px] text-slate-500"><MapPin size={9} /> {project.city} · {project.district} · Ada {project.island}</div></div><ChevronRight size={13} className={active ? "text-blue-300" : "text-slate-700"} /></div>
               <div className="mt-2.5 flex items-center justify-between"><span className="flex items-center gap-1 text-[8px] text-slate-500"><UserRound size={9} /> {project.supervisor}</span><span className="text-[9px] font-black text-blue-300">%{project.progress}</span></div>
               <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.05]"><div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-400" style={{ width: `${project.progress}%` }} /></div>
-              <div className="mt-2 flex items-center justify-between text-[8px]"><span className="rounded-md bg-white/[0.035] px-1.5 py-0.5 font-bold text-slate-500">{project.status}</span><span className="text-slate-600">{project.streets} sokak</span></div>
+              <div className="mt-2 flex items-center justify-between text-[8px]"><span className="rounded-md bg-white/[0.035] px-1.5 py-0.5 font-bold text-slate-500">{project.workflowState}</span><span className="text-slate-600">{project.streets} sokak</span></div>
             </button>
           );
         })}

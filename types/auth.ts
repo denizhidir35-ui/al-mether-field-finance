@@ -1,4 +1,4 @@
-export type AppRole = "CEO" | "PARTNER" | "ASSISTANT";
+export type AppRole = "CEO" | "PARTNER" | "ASSISTANT" | "MANAGER" | "CHIEF" | "PERSONNEL";
 
 export type AppUser = {
   id: string;

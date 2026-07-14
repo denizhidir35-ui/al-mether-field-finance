@@ -7,16 +7,23 @@ import { IntroVideo } from "@/components/layout/IntroVideo";
 import { ModuleRenderer } from "@/components/layout/ModuleRenderer";
 import { useAppSession } from "@/hooks/useAppSession";
 import type { ModuleId } from "@/core/navigation/navigation.types";
+import { ChiefConsole } from "@/modules/operations/chief/ChiefConsole";
+import { OperationsProvider } from "@/modules/operations/hooks/OperationsProvider";
 
 export default function HomePage() {
   const { user, initialized, startSession, endSession } = useAppSession();
   const [activeModule, setActiveModule] = useState<ModuleId>("dashboard");
   const [showIntro, setShowIntro] = useState(false);
+  const [showChiefAccess, setShowChiefAccess] = useState(false);
 
   if (!initialized) return null;
 
+  if (!user && showChiefAccess) {
+    return <OperationsProvider><ChiefConsole onExit={() => setShowChiefAccess(false)} /></OperationsProvider>;
+  }
+
   if (!user) {
-    return <LoginScreen onAuthenticate={async (email, password) => { await startSession(email, password); setShowIntro(true); }} />;
+    return <LoginScreen onOpenChief={() => setShowChiefAccess(true)} onAuthenticate={async (email, password) => { await startSession(email, password); setShowIntro(true); }} />;
   }
 
   function logout() {

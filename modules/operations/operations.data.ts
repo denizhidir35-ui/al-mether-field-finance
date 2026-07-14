@@ -1,12 +1,13 @@
-import type { OperationProject, OperationsKPI } from "./types";
+import type { OperationProject } from "./types";
 
 export const OPERATION_PROJECTS: readonly OperationProject[] = [
   {
-    id: "izmir-karsiyaka-085",
-    name: "M085 Karşıyaka Fiber Dönüşüm",
+    id: "project-alm-0001",
+    code: "ALM-0001",
+    name: "Karşıyaka Fiber Dönüşüm",
     city: "İzmir",
     district: "Karşıyaka",
-    island: "M085",
+    island: "085",
     status: "Sahada",
     progress: 72,
     supervisor: "Ahmet Yılmaz",
@@ -15,14 +16,22 @@ export const OPERATION_PROJECTS: readonly OperationProject[] = [
     buildings: 284,
     startDate: "01 Tem 2026",
     estimatedEndDate: "28 Tem 2026",
-    coordinates: { lat: 38.4554, lng: 27.1197 }
+    coordinates: { lat: 38.4554, lng: 27.1197 },
+    activePersonnelCount: 5,
+    completedTargetCount: 24,
+    workflowState: "Kablo",
+    latestOperation: "Bina dışı kablo kontrolü",
+    supportCount: 0,
+    photoCount: 86,
+    markerStatus: "idle"
   },
   {
-    id: "izmir-bornova-086",
-    name: "M086 Bornova Altyapı Operasyonu",
+    id: "project-alm-0002",
+    code: "ALM-0002",
+    name: "Bornova Altyapı Operasyonu",
     city: "İzmir",
     district: "Bornova",
-    island: "M086",
+    island: "086",
     status: "Sahada",
     progress: 46,
     supervisor: "Mehmet Kaya",
@@ -31,14 +40,22 @@ export const OPERATION_PROJECTS: readonly OperationProject[] = [
     buildings: 196,
     startDate: "06 Tem 2026",
     estimatedEndDate: "04 Ağu 2026",
-    coordinates: { lat: 38.4622, lng: 27.2165 }
+    coordinates: { lat: 38.4622, lng: 27.2165 },
+    activePersonnelCount: 4,
+    completedTargetCount: 11,
+    workflowState: "Keşif",
+    latestOperation: "DEKA fotoğrafı doğrulandı",
+    supportCount: 0,
+    photoCount: 54,
+    markerStatus: "idle"
   },
   {
-    id: "izmir-gaziemir-101",
-    name: "M101 Gaziemir Saha Teslimi",
+    id: "project-alm-0003",
+    code: "ALM-0003",
+    name: "Gaziemir Saha Teslimi",
     city: "İzmir",
     district: "Gaziemir",
-    island: "M101",
+    island: "101",
     status: "Teslim",
     progress: 91,
     supervisor: "Serkan Demir",
@@ -47,15 +64,13 @@ export const OPERATION_PROJECTS: readonly OperationProject[] = [
     buildings: 148,
     startDate: "18 Haz 2026",
     estimatedEndDate: "15 Tem 2026",
-    coordinates: { lat: 38.3213, lng: 27.1297 }
+    coordinates: { lat: 38.3213, lng: 27.1297 },
+    activePersonnelCount: 3,
+    completedTargetCount: 39,
+    workflowState: "Teslim",
+    latestOperation: "Son fotoğraflar tamamlandı",
+    supportCount: 0,
+    photoCount: 46,
+    markerStatus: "completed"
   }
-] as const;
-
-export const OPERATIONS_KPIS: readonly OperationsKPI[] = [
-  { label: "Aktif Proje", mobileLabel: "Projeler", value: "3", detail: "2 sahada, 1 teslimde" },
-  { label: "Aktif Şef", mobileLabel: "Şefler", value: "3", detail: "Tümü çevrimiçi" },
-  { label: "Aktif Personel", mobileLabel: "Personel", value: "15", detail: "12 personel sahada" },
-  { label: "Bugün Tamamlanan Bina", mobileLabel: "Bina / Bugün", value: "24", detail: "+6 son iki saatte" },
-  { label: "Devam Eden Operasyon", mobileLabel: "Operasyon", value: "8", detail: "3 kritik iş akışı" },
-  { label: "Toplam Sokak", mobileLabel: "Sokaklar", value: "39", detail: "21 sokak tamamlandı" }
 ] as const;

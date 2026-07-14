@@ -1,9 +1,9 @@
 import type { CalendarEvent, CeoNotification, FieldTask, FieldTeam, UpcomingPayment } from "./types";
 
 export const FIELD_TASKS: readonly FieldTask[] = [
-  { title: "M085 bina giriş çalışması", location: "Karşıyaka", team: "Ekip Alpha", status: "Devam ediyor", progress: 72, dueTime: "14:30" },
-  { title: "M086 fiber keşif", location: "Bornova", team: "Ekip Beta", status: "Saha kontrolü", progress: 46, dueTime: "16:00" },
-  { title: "M101 teslim ve fotoğraf", location: "Gaziemir", team: "Ekip Gamma", status: "Teslime hazır", progress: 91, dueTime: "17:30" },
+  { title: "ALM-0001 bina giriş çalışması", location: "Karşıyaka", team: "Ekip Alpha", status: "Devam ediyor", progress: 72, dueTime: "14:30" },
+  { title: "ALM-0002 fiber keşif", location: "Bornova", team: "Ekip Beta", status: "Saha kontrolü", progress: 46, dueTime: "16:00" },
+  { title: "ALM-0003 teslim ve fotoğraf", location: "Gaziemir", team: "Ekip Gamma", status: "Teslime hazır", progress: 91, dueTime: "17:30" },
 ];
 
 export const FIELD_TEAMS: readonly FieldTeam[] = [
@@ -20,12 +20,12 @@ export const UPCOMING_PAYMENTS: readonly UpcomingPayment[] = [
 
 export const CALENDAR_EVENTS: readonly CalendarEvent[] = [
   { id: "event-1", day: "12", month: "TEM", time: "11:00", title: "Operasyon değerlendirme", context: "Merkez ofis" },
-  { id: "event-2", day: "13", month: "TEM", time: "09:30", title: "M101 saha teslimi", context: "Gaziemir" },
+  { id: "event-2", day: "13", month: "TEM", time: "09:30", title: "ALM-0003 saha teslimi", context: "Gaziemir" },
   { id: "event-3", day: "15", month: "TEM", time: "14:00", title: "Hakediş kontrolü", context: "Online" },
 ];
 
 export const CEO_NOTIFICATIONS: readonly CeoNotification[] = [
   { id: "notice-1", title: "2 onay bekliyor", detail: "Satın alma ve personel talebi", tone: "amber" },
-  { id: "notice-2", title: "M101 teslime hazır", detail: "Saha fotoğrafları tamamlandı", tone: "emerald" },
+  { id: "notice-2", title: "ALM-0003 teslime hazır", detail: "Saha fotoğrafları tamamlandı", tone: "emerald" },
   { id: "notice-3", title: "Haftalık rapor hazır", detail: "Operasyon özeti oluşturuldu", tone: "blue" },
 ];

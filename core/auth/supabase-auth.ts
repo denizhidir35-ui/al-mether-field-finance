@@ -18,7 +18,7 @@ function databaseErrorMessage(error: { message?: string; code?: string }) {
 
 function toAppRole(role: string): AppRole {
   const normalized = role.trim().toUpperCase();
-  if (normalized === "CEO" || normalized === "PARTNER" || normalized === "ASSISTANT") {
+  if (normalized === "CEO" || normalized === "PARTNER" || normalized === "ASSISTANT" || normalized === "MANAGER" || normalized === "CHIEF" || normalized === "PERSONNEL") {
     return normalized;
   }
   return "ASSISTANT";
@@ -45,7 +45,7 @@ async function loadProfile(user: User): Promise<AppUser> {
     name: profile.display_name,
     email: profile.email.toLowerCase(),
     role,
-    title: role === "CEO" ? "Co-Founder & CEO" : role === "PARTNER" ? "Co-Founder" : "Executive Assistant",
+    title: role === "CEO" ? "Co-Founder & CEO" : role === "PARTNER" ? "Co-Founder" : role === "MANAGER" ? "Operations Manager" : role === "CHIEF" ? "Field Chief" : role === "PERSONNEL" ? "Field Personnel" : "Executive Assistant",
   };
 }
 
