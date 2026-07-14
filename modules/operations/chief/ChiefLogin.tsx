@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Fingerprint, ShieldCheck } from "lucide-react";
 
-export function ChiefLogin({ error, onLogin, onExit }: { error: string | null; onLogin: (personnelNumber: string, password: string) => Promise<boolean>; onExit?: () => void }) {
+export function ChiefLogin({ error, onLogin }: { error: string | null; onLogin: (personnelNumber: string, password: string) => Promise<boolean> }) {
   const [personnelNumber, setPersonnelNumber] = useState("MTHR001");
   const [password, setPassword] = useState("1234");
   const [loading, setLoading] = useState(false);
@@ -27,7 +27,6 @@ export function ChiefLogin({ error, onLogin, onExit }: { error: string | null; o
         {error ? <div className="mt-3 rounded-xl border border-rose-400/15 bg-rose-500/[0.07] px-3 py-2 text-[9px] font-bold text-rose-300">{error}</div> : null}
         <button disabled={loading} className="mt-5 flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 text-[11px] font-black text-white shadow-[0_14px_35px_rgba(37,99,235,.28)] disabled:opacity-50"><ShieldCheck size={16} />{loading ? "Doğrulanıyor" : "Operasyona Gir"}</button>
         <div className="mt-3 text-center text-[8px] text-slate-600">Demo · MTHR001 / 1234</div>
-        {onExit ? <button type="button" onClick={onExit} className="mt-3 h-9 w-full text-[9px] font-bold text-slate-500">CEO Operations'a dön</button> : null}
       </form>
     </div>
   );
