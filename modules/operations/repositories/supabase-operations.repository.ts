@@ -44,6 +44,7 @@ type PersonnelRow = {
   personnel_code: string;
   display_name: string;
   title: string;
+  assigned_chief_code: string | null;
   status: string;
   qr_value: string;
   qr_version: number;
@@ -107,6 +108,7 @@ function mapPersonnel(row: PersonnelRow): PersonnelRecord {
     personnelCode: row.personnel_code as FieldPersonnelCode,
     displayName: row.display_name,
     title: row.title,
+    assignedChiefCode: row.assigned_chief_code ?? undefined,
     status: row.status.toLowerCase() as PersonnelRecord["status"],
     qrValue: row.qr_value,
     qrVersion: row.qr_version,
@@ -338,7 +340,7 @@ export class SupabaseOperationsRepository implements OperationsRepository {
     const [projectsResult, workOrdersResult, personnelResult, eventsResult] = await Promise.all([
       this.client.from("projects").select("id,company_id,project_number,customer,title,description,address,city,district,latitude,longitude").order("project_number"),
       this.client.from("work_orders").select("id,code,customer,project_code,assigned_chief_id,assigned_personnel_ids,operation_type,workflow_id,target_codes,planned_start_at,estimated_end_at,priority,attachment_ids,status,created_at,started_at,closed_at").order("created_at"),
-      this.client.from("operation_personnel").select("id,personnel_code,display_name,title,status,qr_value,qr_version,created_at,updated_at,documents,certificates,trainings,signatures,performance_records,authorizations").order("personnel_code"),
+      this.client.from("operation_personnel").select("id,personnel_code,display_name,title,assigned_chief_code,status,qr_value,qr_version,created_at,updated_at,documents,certificates,trainings,signatures,performance_records,authorizations").order("personnel_code"),
       this.client.from("operation_events").select("id,event_type,project_code,work_order_id,chief_id,deduplication_key,target_code,step_id,context,payload,occurred_at,version,sequence").order("sequence"),
     ]);
     const failure = [projectsResult.error, workOrdersResult.error, personnelResult.error, eventsResult.error].find(Boolean);

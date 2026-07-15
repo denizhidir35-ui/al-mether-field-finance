@@ -7,6 +7,7 @@ import { canConfirmDelivery } from "../delivery/delivery.policy";
 import { createPhotoEvidence } from "../photos/photo-evidence.factory";
 import { systemOperationClock } from "../services/operation-clock.service";
 import { captureBrowserLocation } from "../services/location.service";
+import { assertPersonnelQrAssignment } from "../services/personnel-qr-assignment";
 import { getWorkflowStep } from "../workflow/workflow.definition";
 import { useOperationsContext } from "./OperationsProvider";
 
@@ -54,7 +55,8 @@ export function useOperationWorkflow(project: OperationProject, chief: ChiefAcco
   }
 
   function recordPersonnelAttendance(personnelCode: FieldPersonnelCode) {
-    if (!assignedWorkOrder.personnelIds.includes(personnelCode)) throw new Error("Bu personel İş Emri ekibinde değil.");
+    const personnel = readModel.personnelRecords.find(record => record.personnelCode === personnelCode);
+    assertPersonnelQrAssignment(personnel, chief.id, assignedWorkOrder.personnelIds);
     const attendanceAction = state.activePersonnelCodes.includes(personnelCode) ? "check_out" : "check_in";
     const scanId = systemOperationClock.now();
     dispatchMany([

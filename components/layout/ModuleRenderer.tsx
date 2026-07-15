@@ -4,7 +4,7 @@ import type { ModuleId } from "@/core/navigation/navigation.types";
 import { DashboardModule } from "@/modules/dashboard/DashboardModule";
 import { FinanceModule } from "@/modules/finance/FinanceModule";
 import { OperationsModule } from "@/modules/operations/OperationsModule";
-import { PersonnelRegistry } from "@/modules/operations/components/PersonnelRegistry";
+import { WorkforceModule } from "@/modules/workforce/components/WorkforceModule";
 import { PlaceholderModule } from "@/modules/shared/PlaceholderModule";
 
 type ModuleRendererProps = { activeModule: ModuleId; user: AppUser; onNavigate: (module: ModuleId) => void };
@@ -22,6 +22,6 @@ export function ModuleRenderer({ activeModule, user, onNavigate }: ModuleRendere
   if (activeModule === "dashboard") return <DashboardModule user={user} onNavigate={onNavigate} />;
   if (activeModule === "finance") return <FinanceModule user={user} />;
   if (activeModule === "operations") return <OperationsModule user={user} />;
-  if (activeModule === "hr") return <PersonnelRegistry />;
+  if (activeModule === "hr") return <WorkforceModule />;
   return <PlaceholderModule {...PLACEHOLDERS[activeModule]} />;
 }

@@ -5,6 +5,7 @@ export type PersonnelRecord = {
   personnelCode: FieldPersonnelCode;
   displayName: string;
   title: string;
+  assignedChiefCode?: string;
   status: "active" | "passive" | "archived";
   qrValue: string;
   qrVersion: number;
