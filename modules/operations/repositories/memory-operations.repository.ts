@@ -37,6 +37,16 @@ export class MemoryOperationsRepository implements OperationsRepository {
     );
     if (unavailablePersonnel) throw new Error(`İş Emri aktif olmayan personel içeriyor: ${unavailablePersonnel}`);
     this.workOrders = [...this.workOrders, workOrder];
+    if (process.env.NODE_ENV === "development") {
+      console.info("[OperationEngine] WorkOrder repository write", {
+        id: workOrder.id,
+        code: workOrder.code,
+        projectCode: workOrder.projectCode,
+        assignedChiefId: workOrder.chiefId,
+        personnelIds: workOrder.personnelIds,
+        status: workOrder.status,
+      });
+    }
     this.emit();
     return workOrder;
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ClipboardCheck, X } from "lucide-react";
 import { FocusLayer } from "@/components/workspace/FocusLayer";
 import type { FieldPersonnelCode, ProjectCode, TargetCode } from "../domain/identifiers";
@@ -10,7 +10,7 @@ import { OPERATION_CHIEFS } from "../operations.data";
 
 const inputClass = "h-10 w-full rounded-xl border border-white/[0.07] bg-black/20 px-3 text-[10px] font-semibold text-slate-200 outline-none focus:border-blue-400/30";
 
-export function WorkOrderPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function WorkOrderPanel({ open, defaultProjectCode, onClose }: { open: boolean; defaultProjectCode: ProjectCode; onClose: () => void }) {
   const { readModel, createWorkOrder } = useOperationsContext();
   const availableProjects = useMemo(() => readModel.projects.filter(project => !readModel.workOrders.some(order => order.projectCode === project.code && order.status !== "cancelled")), [readModel.projects, readModel.workOrders]);
   const [projectCode, setProjectCode] = useState<ProjectCode | "">("");
@@ -22,6 +22,13 @@ export function WorkOrderPanel({ open, onClose }: { open: boolean; onClose: () =
   const [priority, setPriority] = useState<WorkOrderPriority>("normal");
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!open || availableProjects.some(project => project.code === projectCode)) return;
+    const preferredProject = availableProjects.find(project => project.code === defaultProjectCode) ?? availableProjects[0];
+    setProjectCode(preferredProject?.code ?? "");
+    setError(null);
+  }, [availableProjects, defaultProjectCode, open, projectCode]);
+
   function togglePersonnel(code: FieldPersonnelCode) {
     setPersonnelIds(current => current.includes(code) ? current.filter(item => item !== code) : [...current, code]);
   }
@@ -29,10 +36,12 @@ export function WorkOrderPanel({ open, onClose }: { open: boolean; onClose: () =
   function submit(event: FormEvent) {
     event.preventDefault();
     setError(null);
-    if (!projectCode || personnelIds.length === 0) { setError("Proje ve en az bir personel seçilmelidir."); return; }
+    if (!projectCode) { setError("İş Emri için proje seçilmelidir."); return; }
+    if (personnelIds.length === 0) { setError("En az bir personel seçilmelidir."); return; }
     const targetCode = projectCode.replace("ALM-", "TGT-") as TargetCode;
     try {
       createWorkOrder({ customerName: customerName.trim(), projectCode, chiefId, personnelIds, plannedStartAt: new Date(`${plannedStartAt}T06:00:00+03:00`).toISOString(), estimatedEndAt: new Date(`${estimatedEndAt}T18:00:00+03:00`).toISOString(), priority, targetCodes: [targetCode] });
+      setPersonnelIds([]);
       onClose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "İş Emri oluşturulamadı.");

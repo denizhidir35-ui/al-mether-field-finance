@@ -35,7 +35,7 @@ function OperationsContent({ user }: { user: AppUser }) {
         <div className={`h-full min-h-0 overflow-hidden ${activePanel === "map" ? "block" : "hidden"} xl:block`}><OperationMapCard projects={readModel.projects} projectedMarkers={readModel.mapMarkers} selectedId={selectedProject.id} onSelect={project => { setSelectedProjectId(project.id); setActivePanel("summary"); }} /></div>
         <div className={`h-full min-h-0 overflow-hidden ${activePanel === "summary" ? "block" : "hidden"} xl:block`}><ProjectSummary project={selectedProject} workOrder={selectedWorkOrder} workflow={selectedWorkOrder ? readModel.workOrderStates[selectedWorkOrder.id] : undefined} /></div>
       </section>
-      <WorkOrderPanel open={workOrderPanelOpen} onClose={() => setWorkOrderPanelOpen(false)} />
+      <WorkOrderPanel open={workOrderPanelOpen} defaultProjectCode={selectedProject.code} onClose={() => setWorkOrderPanelOpen(false)} />
     </div>
   );
 }
