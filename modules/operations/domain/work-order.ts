@@ -1,4 +1,4 @@
-import type { ProjectCode, TargetCode, WorkOrderCode, WorkOrderId } from "./identifiers";
+import type { FieldPersonnelCode, ProjectCode, TargetCode, WorkOrderCode, WorkOrderId } from "./identifiers";
 
 export type WorkOrderStatus = "assigned" | "active" | "completed" | "cancelled";
 export type WorkOrderPriority = "low" | "normal" | "high" | "critical";
@@ -10,7 +10,7 @@ export type WorkOrder = {
   projectCode: ProjectCode;
   operationType: string;
   chiefId: string;
-  personnelIds: readonly string[];
+  personnelIds: readonly FieldPersonnelCode[];
   workflowId: string;
   targetCodes: readonly TargetCode[];
   plannedStartAt: string;
@@ -21,4 +21,8 @@ export type WorkOrder = {
   assignedAt: string;
   startedAt?: string;
   completedAt?: string;
+};
+
+export type NewWorkOrder = Pick<WorkOrder, "customerName" | "projectCode" | "chiefId" | "personnelIds" | "plannedStartAt" | "estimatedEndAt" | "priority"> & {
+  targetCodes: readonly TargetCode[];
 };

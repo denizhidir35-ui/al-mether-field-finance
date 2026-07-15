@@ -1,5 +1,6 @@
 import type { MapMarker } from "@/core/map/types";
 import type { WorkOrder } from "../domain/work-order";
+import type { PersonnelRecord } from "../domain/personnel-record";
 import type { OperationProject } from "../domain/operation-project";
 import type { WorkOrderId } from "../domain/identifiers";
 import type { OperationEvent } from "../workflow/workflow.events";
@@ -20,7 +21,7 @@ function markerTone(status: OperationProject["markerStatus"]): NonNullable<MapMa
   return "default";
 }
 
-export function projectOperationsReadModel(baseProjects: readonly OperationProject[], baseWorkOrders: readonly WorkOrder[], events: readonly OperationEvent[]): OperationsReadModel {
+export function projectOperationsReadModel(baseProjects: readonly OperationProject[], baseWorkOrders: readonly WorkOrder[], events: readonly OperationEvent[], personnelRecords: readonly PersonnelRecord[] = []): OperationsReadModel {
   const workOrderStates = Object.fromEntries(baseWorkOrders.map(workOrder => [
     workOrder.id,
     reduceWorkflowEvents(events.filter(event => event.workOrderId === workOrder.id))
@@ -41,17 +42,17 @@ export function projectOperationsReadModel(baseProjects: readonly OperationProje
     const projectEvents = workOrder ? events.filter(event => event.workOrderId === workOrder.id) : [];
     const latestEvent = projectEvents.at(-1);
     const workflowProgress = calculateWorkflowProgress(workflow);
-    const progress = projectEvents.length > 0 ? Math.min(100, Math.round(project.progress + ((100 - project.progress) * workflowProgress / 100))) : project.progress;
-    const markerStatus = workflow.markerStatus === "idle" ? project.markerStatus : workflow.markerStatus;
+    const progress = workOrder ? workflowProgress : 0;
+    const markerStatus = workOrder ? workflow.markerStatus : "idle";
     return {
       ...project,
       progress,
-      activePersonnelCount: workflow.activePersonnelCount || project.activePersonnelCount,
-      completedTargetCount: project.completedTargetCount + workflow.completedTargetCount,
-      workflowState: projectEvents.length > 0 ? workflow.currentPhase : project.workflowState,
-      latestOperation: workflow.latestOperation === "İş emri bekleniyor" ? project.latestOperation : workflow.latestOperation,
-      supportCount: project.supportCount + workflow.supportCount,
-      photoCount: project.photoCount + workflow.evidence.filter(evidence => evidence.type === "photo").length,
+      activePersonnelCount: workOrder ? workflow.activePersonnelCount : 0,
+      completedTargetCount: workOrder ? workflow.completedTargetCount : 0,
+      workflowState: workOrder ? workflow.currentPhase : "İş Emri Yok",
+      latestOperation: workOrder ? workflow.latestOperation : "İş emri bekleniyor",
+      supportCount: workOrder ? workflow.supportCount : 0,
+      photoCount: workOrder ? workflow.evidence.filter(evidence => evidence.type === "photo").length : 0,
       status: workflow.workOrderStatus === "completed" ? "Teslim" as const : project.status,
       estimatedEndDate: latestEvent ? projectedEndDate(latestEvent.occurredAt, progress, workflow.completedAt) : project.estimatedEndDate,
       markerStatus
@@ -64,10 +65,11 @@ export function projectOperationsReadModel(baseProjects: readonly OperationProje
   const supportCount = projects.reduce((total, project) => total + project.supportCount, 0);
   const criticalProblemCount = Object.values(workOrderStates).reduce((total, state) => total + state.criticalProblemCount, 0);
   const photoCount = projects.reduce((total, project) => total + project.photoCount, 0);
+  const latestPhoto = events.toReversed().find(event => event.type === "PHOTO_CAPTURED")?.payload?.evidence;
   const activeChiefCount = new Set(workOrders.filter(workOrder => workOrder.status === "active").map(workOrder => workOrder.chiefId)).size;
   const notifications = Object.values(workOrderStates).flatMap(state => state.notifications).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
   const kpis = [
-    { label: "Aktif Proje", mobileLabel: "Projeler", value: String(projects.filter(project => project.status !== "Teslim").length), detail: `${projects.length} toplam proje` },
+    { label: "Aktif Proje", mobileLabel: "Projeler", value: String(workOrders.filter(workOrder => workOrder.status === "active" || workOrder.status === "assigned").length), detail: `${workOrders.length} İş Emri` },
     { label: "Aktif Şef", mobileLabel: "Şefler", value: String(activeChiefCount), detail: "WorkOrder projection" },
     { label: "Aktif Personel", mobileLabel: "Personel", value: String(activePersonnel), detail: "Read Model tarafından hesaplandı" },
     { label: "Tamamlanan Target", mobileLabel: "Target", value: String(completedTargets), detail: "Teslimi doğrulanan hedefler" },
@@ -78,6 +80,7 @@ export function projectOperationsReadModel(baseProjects: readonly OperationProje
 
   return {
     workOrders,
+    personnelRecords,
     projects,
     kpis,
     workOrderStates,
@@ -87,6 +90,7 @@ export function projectOperationsReadModel(baseProjects: readonly OperationProje
     notifications,
     latestOperation: events.at(-1)?.context.action ?? "Operasyonlar hazır",
     supportCount,
-    photoCount
+    photoCount,
+    latestPhoto
   };
 }

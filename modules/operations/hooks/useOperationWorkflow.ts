@@ -2,10 +2,11 @@
 
 import type { ChiefAccount } from "../domain/chief-account";
 import type { OperationProject } from "../domain/operation-project";
-import type { TargetCode } from "../domain/identifiers";
+import type { FieldPersonnelCode, TargetCode } from "../domain/identifiers";
 import { canConfirmDelivery } from "../delivery/delivery.policy";
 import { createPhotoEvidence } from "../photos/photo-evidence.factory";
 import { systemOperationClock } from "../services/operation-clock.service";
+import { captureBrowserLocation } from "../services/location.service";
 import { getWorkflowStep } from "../workflow/workflow.definition";
 import { useOperationsContext } from "./OperationsProvider";
 
@@ -26,18 +27,10 @@ export function useOperationWorkflow(project: OperationProject, chief: ChiefAcco
       return;
     }
     if (state.currentStep === "deka") {
-      const evidence = createPhotoEvidence(assignedWorkOrder.id, "deka", systemOperationClock);
-      dispatchMany([
-        { ...common, type: "CHECKPOINT_CONFIRMED", deduplicationKey: key("deka-dk-correct"), stepId: "deka", context: { module: "deka", action: "dk_correct" }, payload: { checkpointId: "dk_correct" } },
-        { ...common, type: "PHOTO_CAPTURED", deduplicationKey: key("deka-first-photo"), stepId: "deka", context: { module: "deka", action: "first_photo" }, payload: { evidence } }
-      ]);
+      dispatch({ ...common, type: "CHECKPOINT_CONFIRMED", deduplicationKey: key("deka-dk-correct"), stepId: "deka", context: { module: "deka", action: "dk_correct" }, payload: { checkpointId: "dk_correct" } });
       return;
     }
     if (state.currentStep === "personnel") {
-      dispatchMany([
-        { ...common, type: "PERSONNEL_QR_START", deduplicationKey: key("personnel-qr-start"), stepId: "personnel", context: { module: "personnel", action: "personnel_qr_start" } },
-        { ...common, type: "PERSONNEL_QR_FINISH", deduplicationKey: key("personnel-qr-finish"), stepId: "personnel", context: { module: "personnel", action: "personnel_qr_finish" }, payload: { activePersonnelCount: assignedWorkOrder.personnelIds.length } }
-      ]);
       return;
     }
     if (state.currentStep === "target") {
@@ -60,6 +53,44 @@ export function useOperationWorkflow(project: OperationProject, chief: ChiefAcco
     }
   }
 
+  function recordPersonnelAttendance(personnelCode: FieldPersonnelCode) {
+    if (!assignedWorkOrder.personnelIds.includes(personnelCode)) throw new Error("Bu personel İş Emri ekibinde değil.");
+    const attendanceAction = state.activePersonnelCodes.includes(personnelCode) ? "check_out" : "check_in";
+    const scanId = systemOperationClock.now();
+    dispatchMany([
+      { ...common, type: "PERSONNEL_QR_START", deduplicationKey: key(`personnel-qr-start-${personnelCode}-${scanId}`), stepId: "personnel", context: { module: "personnel", action: "personnel_qr_scan" } },
+      { ...common, type: "PERSONNEL_QR_FINISH", deduplicationKey: key(`personnel-qr-finish-${personnelCode}-${scanId}`), stepId: "personnel", context: { module: "personnel", action: `personnel_${attendanceAction}` }, payload: { personnelCode, attendanceAction } }
+    ]);
+  }
+
+  function capturePhoto(file: File) {
+    const stepId = state.currentStep === "deka" ? "deka" : "photo";
+    const evidence = { ...createPhotoEvidence(assignedWorkOrder.id, stepId, systemOperationClock), localReference: file.name };
+    dispatch({ ...common, type: "PHOTO_CAPTURED", deduplicationKey: key(`photo-${evidence.id}`), stepId, context: { module: "workflow", action: "photo_captured" }, payload: { evidence } });
+  }
+
+  async function captureLocation() {
+    const coordinates = await captureBrowserLocation();
+    const capturedAt = systemOperationClock.now();
+    dispatch({
+      ...common,
+      type: "LOCATION_CAPTURED",
+      deduplicationKey: key(`location-${capturedAt}`),
+      stepId: state.currentStep,
+      context: { module: "workflow", action: "location_captured" },
+      payload: { evidence: { id: `evidence-location-${capturedAt}`, workOrderId: assignedWorkOrder.id, stepId: state.currentStep, type: "location", requirement: "required", coordinates, capturedAt, syncStatus: "local", analysisStatus: "not_requested" } }
+    });
+  }
+
+  function confirmDelivery() {
+    if (!canConfirmDelivery(state)) throw new Error("Teslim için Target ve son fotoğraf tamamlanmalıdır.");
+    const targetCode: TargetCode = assignedWorkOrder.targetCodes[0] ?? "TGT-0001";
+    dispatchMany([
+      { ...common, type: "DELIVERY_CONFIRMED", deduplicationKey: key(`delivery-confirmed-${targetCode}`), stepId: "delivery", targetCode, context: { module: "delivery", action: "delivery_confirmed" } },
+      { ...common, type: "WORKFLOW_COMPLETED", deduplicationKey: key("workflow-completed"), stepId: "completed", targetCode, context: { module: "workflow", action: "workflow_completed" } }
+    ]);
+  }
+
   function createChannelActivity(module: "chat" | "support") {
     if (module === "chat") {
       dispatch({
@@ -80,5 +111,5 @@ export function useOperationWorkflow(project: OperationProject, chief: ChiefAcco
     });
   }
 
-  return { workOrder: assignedWorkOrder, state, step, advance, createChannelActivity };
+  return { workOrder: assignedWorkOrder, state, step, advance, recordPersonnelAttendance, capturePhoto, captureLocation, confirmDelivery, createChannelActivity };
 }

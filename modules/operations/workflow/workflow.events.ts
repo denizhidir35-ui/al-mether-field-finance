@@ -1,5 +1,5 @@
 import type { OperationEvidence } from "../domain/operation-evidence";
-import type { ProjectCode, TargetCode, WorkOrderId } from "../domain/identifiers";
+import type { FieldPersonnelCode, ProjectCode, TargetCode, WorkOrderId } from "../domain/identifiers";
 import type { QualityCheckpointId, WorkflowStepId } from "./workflow.types";
 
 export type OperationEventType =
@@ -33,6 +33,8 @@ export type OperationEvent = {
   };
   payload?: {
     activePersonnelCount?: number;
+    personnelCode?: FieldPersonnelCode;
+    attendanceAction?: "check_in" | "check_out";
     checkpointId?: QualityCheckpointId;
     evidence?: OperationEvidence;
     message?: string;

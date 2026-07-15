@@ -1,5 +1,6 @@
 import type { MapMarker } from "@/core/map/types";
 import type { WorkOrder } from "../domain/work-order";
+import type { PersonnelRecord } from "../domain/personnel-record";
 import type { OperationProject } from "../domain/operation-project";
 import type { WorkOrderId } from "../domain/identifiers";
 import type { OperationsKPI } from "../types";
@@ -12,6 +13,7 @@ export type ProjectWorkflowProjection = {
 
 export type OperationsReadModel = {
   workOrders: readonly WorkOrder[];
+  personnelRecords: readonly PersonnelRecord[];
   projects: readonly OperationProject[];
   kpis: readonly OperationsKPI[];
   workOrderStates: Readonly<Record<WorkOrderId, WorkflowState>>;
@@ -22,4 +24,5 @@ export type OperationsReadModel = {
   latestOperation: string;
   supportCount: number;
   photoCount: number;
+  latestPhoto?: WorkflowState["evidence"][number];
 };

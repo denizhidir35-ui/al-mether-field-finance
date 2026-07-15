@@ -1,4 +1,5 @@
-import type { WorkOrder } from "../domain/work-order";
+import type { NewWorkOrder, WorkOrder } from "../domain/work-order";
+import type { NewPersonnelRecord, PersonnelRecord } from "../domain/personnel-record";
 import type { OperationEvent } from "../workflow/workflow.events";
 import type { OperationsRepository, OperationsRepositoryListener } from "./operations.repository";
 
@@ -6,10 +7,56 @@ export class MemoryOperationsRepository implements OperationsRepository {
   private events: OperationEvent[] = [];
   private listeners = new Set<OperationsRepositoryListener>();
 
-  constructor(private readonly workOrders: readonly WorkOrder[]) {}
+  private workOrders: WorkOrder[];
+  private personnel: PersonnelRecord[];
+
+  constructor(workOrders: readonly WorkOrder[] = [], personnel: readonly PersonnelRecord[] = []) {
+    this.workOrders = [...workOrders];
+    this.personnel = [...personnel];
+  }
 
   getWorkOrders() {
     return this.workOrders;
+  }
+
+  createWorkOrder(input: NewWorkOrder) {
+    const serial = String(this.workOrders.length + 1).padStart(6, "0");
+    const workOrder: WorkOrder = {
+      ...input,
+      id: `work-order-alm-${serial}`,
+      code: `ALM-${serial}`,
+      operationType: "fiber_field_operation",
+      workflowId: "chief-fiber-v1",
+      attachmentIds: [],
+      status: "assigned",
+      assignedAt: new Date().toISOString()
+    };
+    if (this.workOrders.some(candidate => candidate.projectCode === workOrder.projectCode && candidate.status !== "cancelled")) throw new Error("Bu proje için aktif bir İş Emri zaten var.");
+    const unknownPersonnel = workOrder.personnelIds.find(code => !this.personnel.some(record => record.personnelCode === code));
+    if (unknownPersonnel) throw new Error(`İş Emri bilinmeyen personel içeriyor: ${unknownPersonnel}`);
+    this.workOrders = [...this.workOrders, workOrder];
+    this.emit();
+    return workOrder;
+  }
+
+  getPersonnel() {
+    return this.personnel;
+  }
+
+  createPersonnel(input: NewPersonnelRecord) {
+    const serial = String(this.personnel.length + 1).padStart(6, "0");
+    const personnelCode = `PRS${serial}` as const;
+    const record: PersonnelRecord = {
+      ...input,
+      id: `personnel-${serial}`,
+      personnelCode,
+      status: "active",
+      qrValue: `ALMETHER:PERSONNEL:${personnelCode}`,
+      createdAt: new Date().toISOString()
+    };
+    this.personnel = [...this.personnel, record];
+    this.emit();
+    return record;
   }
 
   findWorkOrder(workOrderId: WorkOrder["id"]) {
@@ -50,6 +97,6 @@ export class MemoryOperationsRepository implements OperationsRepository {
   }
 
   private emit() {
-    this.listeners.forEach(listener => listener(this.events));
+    this.listeners.forEach(listener => listener([...this.events]));
   }
 }

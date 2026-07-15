@@ -1,7 +1,9 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { OPERATION_PROJECTS, OPERATION_WORK_ORDERS } from "../operations.data";
+import { OPERATION_PERSONNEL, OPERATION_PROJECTS, OPERATION_WORK_ORDERS } from "../operations.data";
+import type { NewPersonnelRecord } from "../domain/personnel-record";
+import type { NewWorkOrder } from "../domain/work-order";
 import { projectOperationsReadModel } from "../read-model/operations-projector";
 import type { OperationsReadModel } from "../read-model/operations-read-model";
 import { MemoryOperationsRepository } from "../repositories/memory-operations.repository";
@@ -15,22 +17,26 @@ type OperationsContextValue = {
   repository: OperationsRepository;
   dispatch: (event: NewOperationEvent) => void;
   dispatchMany: (events: readonly NewOperationEvent[]) => void;
+  createPersonnel: (input: NewPersonnelRecord) => void;
+  createWorkOrder: (input: NewWorkOrder) => void;
 };
 
 const OperationsContext = createContext<OperationsContextValue | null>(null);
 
 export function OperationsProvider({ children }: { children: ReactNode }) {
-  const repository: OperationsRepository = useMemo(() => new MemoryOperationsRepository(OPERATION_WORK_ORDERS), []);
+  const repository: OperationsRepository = useMemo(() => new MemoryOperationsRepository(OPERATION_WORK_ORDERS, OPERATION_PERSONNEL), []);
   const [events, setEvents] = useState<readonly OperationEvent[]>(repository.getEvents());
 
   useEffect(() => repository.subscribe(setEvents), [repository]);
 
   const value = useMemo<OperationsContextValue>(() => ({
     events,
-    readModel: projectOperationsReadModel(OPERATION_PROJECTS, repository.getWorkOrders(), events),
+    readModel: projectOperationsReadModel(OPERATION_PROJECTS, repository.getWorkOrders(), events, repository.getPersonnel()),
     repository,
     dispatch: event => repository.append(createOperationEvent(event)),
-    dispatchMany: nextEvents => repository.appendMany(nextEvents.map(event => createOperationEvent(event)))
+    dispatchMany: nextEvents => repository.appendMany(nextEvents.map(event => createOperationEvent(event))),
+    createPersonnel: input => { repository.createPersonnel(input); },
+    createWorkOrder: input => { repository.createWorkOrder(input); }
   }), [events, repository]);
 
   return <OperationsContext.Provider value={value}>{children}</OperationsContext.Provider>;

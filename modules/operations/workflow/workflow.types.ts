@@ -1,4 +1,5 @@
 import type { OperationEvidence } from "../domain/operation-evidence";
+import type { FieldPersonnelCode } from "../domain/identifiers";
 
 export type WorkflowStepId = "project" | "deka" | "personnel" | "target" | "photo" | "delivery" | "completed";
 export type WorkflowPhase = "DEKA" | "Keşif" | "Personel" | "Kablo" | "Target" | "Box" | "Teslim" | "Tamamlandı";
@@ -11,6 +12,7 @@ export type WorkflowState = {
   completedSteps: readonly WorkflowStepId[];
   selectedTargetId?: string;
   activePersonnelCount: number;
+  activePersonnelCodes: readonly FieldPersonnelCode[];
   completedTargetCount: number;
   evidence: readonly OperationEvidence[];
   checkpoints: readonly QualityCheckpointId[];

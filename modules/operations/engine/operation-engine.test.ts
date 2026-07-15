@@ -1,94 +1,80 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { OPERATION_PROJECTS, OPERATION_WORK_ORDERS } from "../operations.data.ts";
+import { OPERATION_PROJECTS } from "../operations.data.ts";
 import { projectOperationsReadModel } from "../read-model/operations-projector.ts";
 import { MemoryOperationsRepository } from "../repositories/memory-operations.repository.ts";
 import type { OperationEvent, OperationEventType } from "../workflow/workflow.events.ts";
 import { reduceWorkflowEvents } from "../workflow/workflow.reducer.ts";
 
-const workOrder = OPERATION_WORK_ORDERS[0];
-const occurredAt = "2026-07-14T12:00:00.000Z";
-
-function event(type: OperationEventType, sequence: number, overrides: Partial<OperationEvent> = {}): OperationEvent {
-  return {
-    id: `event-${sequence}`,
-    type,
-    projectCode: workOrder.projectCode,
-    workOrderId: workOrder.id,
-    chiefId: workOrder.chiefId,
-    deduplicationKey: `${workOrder.id}:${type}:${sequence}`,
-    context: { module: "workflow", action: type.toLowerCase() },
-    occurredAt,
-    version: 1,
-    ...overrides
-  };
-}
-
-const dekaEvidence = {
-  id: "evidence-deka-1",
-  workOrderId: workOrder.id,
-  stepId: "deka",
-  type: "photo" as const,
-  requirement: "required" as const,
-  capturedAt: occurredAt,
-  syncStatus: "local" as const,
-  analysisStatus: "not_requested" as const
+const occurredAt = "2026-07-15T09:00:00.000Z";
+const setupRepository = () => {
+  const repository = new MemoryOperationsRepository();
+  const first = repository.createPersonnel({ displayName: "Saha Personeli 1", title: "Teknisyen" });
+  const second = repository.createPersonnel({ displayName: "Saha Personeli 2", title: "Teknisyen" });
+  const workOrder = repository.createWorkOrder({ customerName: "AL METHER Fiber", projectCode: "ALM-0001", chiefId: "chief-mthr001", personnelIds: [first.personnelCode, second.personnelCode], plannedStartAt: occurredAt, estimatedEndAt: "2026-08-15T15:00:00.000Z", priority: "high", targetCodes: ["TGT-0001"] });
+  return { repository, first, second, workOrder };
 };
 
+const fixture = setupRepository();
+
+function event(type: OperationEventType, sequence: number, overrides: Partial<OperationEvent> = {}): OperationEvent {
+  return { id: `event-${sequence}`, type, projectCode: fixture.workOrder.projectCode, workOrderId: fixture.workOrder.id, chiefId: fixture.workOrder.chiefId, deduplicationKey: `${fixture.workOrder.id}:${type}:${sequence}`, context: { module: "workflow", action: type.toLowerCase() }, occurredAt, version: 1, ...overrides };
+}
+
+const dekaEvidence = { id: "evidence-deka-1", workOrderId: fixture.workOrder.id, stepId: "deka", type: "photo" as const, requirement: "required" as const, capturedAt: occurredAt, syncStatus: "local" as const, analysisStatus: "not_requested" as const };
 const finalEvidence = { ...dekaEvidence, id: "evidence-photo-1", stepId: "photo" };
 
-const completedStream: readonly OperationEvent[] = [
-  event("DEKA_STARTED", 1, { stepId: "project", context: { module: "deka", action: "deka_started" } }),
-  event("CHECKPOINT_CONFIRMED", 2, { stepId: "deka", context: { module: "deka", action: "dk_correct" }, payload: { checkpointId: "dk_correct" } }),
-  event("PHOTO_CAPTURED", 3, { stepId: "deka", context: { module: "deka", action: "first_photo" }, payload: { evidence: dekaEvidence } }),
-  event("PERSONNEL_QR_START", 4, { stepId: "personnel", context: { module: "personnel", action: "personnel_qr_start" } }),
-  event("PERSONNEL_QR_FINISH", 5, { stepId: "personnel", context: { module: "personnel", action: "personnel_qr_finish" }, payload: { activePersonnelCount: 5 } }),
-  event("TARGET_SELECTED", 6, { stepId: "target", targetCode: "TGT-0001", payload: {} }),
-  event("PHOTO_CAPTURED", 7, { stepId: "photo", payload: { evidence: finalEvidence } }),
-  event("DELIVERY_CONFIRMED", 8, { stepId: "delivery", targetCode: "TGT-0001" }),
-  event("WORKFLOW_COMPLETED", 9, { stepId: "completed", targetCode: "TGT-0001" })
+const fieldStream: readonly OperationEvent[] = [
+  event("PERSONNEL_QR_START", 1, { stepId: "personnel", context: { module: "personnel", action: "personnel_qr_scan" } }),
+  event("PERSONNEL_QR_FINISH", 2, { stepId: "personnel", context: { module: "personnel", action: "personnel_check_in" }, payload: { personnelCode: fixture.first.personnelCode, attendanceAction: "check_in" } }),
+  event("DEKA_STARTED", 3, { stepId: "project", context: { module: "deka", action: "deka_started" } }),
+  event("CHECKPOINT_CONFIRMED", 4, { stepId: "deka", context: { module: "deka", action: "dk_correct" }, payload: { checkpointId: "dk_correct" } }),
+  event("PHOTO_CAPTURED", 5, { stepId: "deka", context: { module: "workflow", action: "photo_captured" }, payload: { evidence: dekaEvidence } }),
+  event("PERSONNEL_QR_START", 6, { stepId: "personnel", context: { module: "personnel", action: "personnel_qr_scan" } }),
+  event("PERSONNEL_QR_FINISH", 7, { stepId: "personnel", context: { module: "personnel", action: "personnel_check_in" }, payload: { personnelCode: fixture.second.personnelCode, attendanceAction: "check_in" } }),
+  event("TARGET_SELECTED", 8, { stepId: "target", targetCode: "TGT-0001" }),
+  event("LOCATION_CAPTURED", 9, { stepId: "photo", payload: { evidence: { ...finalEvidence, id: "evidence-location-1", type: "location", coordinates: { lat: 38.4554, lng: 27.1197 } } } }),
+  event("PHOTO_CAPTURED", 10, { stepId: "photo", payload: { evidence: finalEvidence } }),
+  event("PROBLEM_REPORTED", 11, { context: { module: "problem", action: "problem_reported" }, payload: { message: "Kablo sarkması", severity: "warning" } }),
+  event("CHAT_MESSAGE", 12, { context: { module: "team", action: "chat_message" }, payload: { message: "Ekip teslim noktasında" } }),
+  event("DELIVERY_CONFIRMED", 13, { stepId: "delivery", targetCode: "TGT-0001" }),
+  event("WORKFLOW_COMPLETED", 14, { stepId: "completed", targetCode: "TGT-0001" })
 ];
 
-test("canonical event stream completes one WorkOrder deterministically", () => {
-  const firstReplay = reduceWorkflowEvents(completedStream);
-  const secondReplay = reduceWorkflowEvents(completedStream);
+test("CEO creates the real WorkOrder root with permanent personnel identities", () => {
+  assert.equal(fixture.workOrder.code, "ALM-000001");
+  assert.deepEqual(fixture.workOrder.personnelIds, ["PRS000001", "PRS000002"]);
+  assert.equal(fixture.first.qrValue, "ALMETHER:PERSONNEL:PRS000001");
+  assert.equal(fixture.repository.getWorkOrders().length, 1);
+});
 
+test("canonical QR compatibility projects check-in and check-out without new event names", () => {
+  const checkedIn = reduceWorkflowEvents(fieldStream.slice(0, 7));
+  assert.deepEqual(checkedIn.activePersonnelCodes, ["PRS000001", "PRS000002"]);
+  assert.equal(checkedIn.activePersonnelCount, 2);
+  const checkedOut = reduceWorkflowEvents([...fieldStream.slice(0, 7), event("PERSONNEL_QR_START", 20), event("PERSONNEL_QR_FINISH", 21, { payload: { personnelCode: fixture.first.personnelCode, attendanceAction: "check_out" }, context: { module: "personnel", action: "personnel_check_out" } })]);
+  assert.deepEqual(checkedOut.activePersonnelCodes, ["PRS000002"]);
+  assert.equal(checkedOut.activePersonnelCount, 1);
+});
+
+test("full field scenario replays deterministically into the CEO read model", () => {
+  const firstReplay = projectOperationsReadModel(OPERATION_PROJECTS, fixture.repository.getWorkOrders(), fieldStream, fixture.repository.getPersonnel());
+  const secondReplay = projectOperationsReadModel(OPERATION_PROJECTS, fixture.repository.getWorkOrders(), fieldStream, fixture.repository.getPersonnel());
   assert.deepEqual(secondReplay, firstReplay);
-  assert.equal(firstReplay.currentStep, "completed");
-  assert.equal(firstReplay.workOrderStatus, "completed");
-  assert.equal(firstReplay.markerStatus, "completed");
-  assert.equal(firstReplay.personnelStatus, "confirmed");
-  assert.equal(firstReplay.completedTargetCount, 1);
-  assert.equal(firstReplay.evidence.length, 2);
+  assert.equal(firstReplay.workOrders[0].status, "completed");
+  assert.equal(firstReplay.personnel.active, 2);
+  assert.equal(firstReplay.problems.open, 1);
+  assert.equal(firstReplay.projects[0].photoCount, 2);
+  assert.equal(firstReplay.projects[0].completedTargetCount, 1);
+  assert.equal(firstReplay.mapMarkers[0].tone, "success");
+  assert.equal(firstReplay.latestPhoto?.id, "evidence-photo-1");
 });
 
-test("duplicate event id or deduplication key is idempotent", () => {
-  const problem = event("PROBLEM_REPORTED", 10, { context: { module: "problem", action: "problem_reported" }, payload: { message: "Kablo uyarısı", severity: "warning" } });
-  const duplicateWithNewId = { ...problem, id: "event-10-retry" };
-  const state = reduceWorkflowEvents([problem, problem, duplicateWithNewId]);
-
-  assert.equal(state.supportCount, 1);
-  assert.equal(state.notifications.length, 1);
-  assert.equal(state.processedEventIds.length, 1);
-});
-
-test("repository rejects events without a registered WorkOrder and deduplicates retries", () => {
-  const repository = new MemoryOperationsRepository(OPERATION_WORK_ORDERS);
-  const message = event("CHAT_MESSAGE", 11, { context: { module: "team", action: "chat_message" }, payload: { message: "Ekip hazır" } });
+test("repository rejects unknown WorkOrders and deduplicates event retries", () => {
+  const repository = setupRepository().repository;
+  const message = event("CHAT_MESSAGE", 30, { context: { module: "team", action: "chat_message" } });
   repository.append(message);
-  repository.append({ ...message, id: "event-11-retry" });
+  repository.append({ ...message, id: "event-30-retry" });
   assert.equal(repository.getEvents().length, 1);
-
   assert.throws(() => repository.append({ ...message, id: "event-unknown", deduplicationKey: "unknown", workOrderId: "work-order-unknown" }), /unknown WorkOrder/);
-});
-
-test("read model projects the same stream for every consumer", () => {
-  const projection = projectOperationsReadModel(OPERATION_PROJECTS, OPERATION_WORK_ORDERS, completedStream);
-  const replay = projectOperationsReadModel(OPERATION_PROJECTS, OPERATION_WORK_ORDERS, completedStream);
-
-  assert.deepEqual(replay, projection);
-  assert.equal(projection.workOrders[0].status, "completed");
-  assert.equal(projection.projects[0].markerStatus, "completed");
-  assert.equal(projection.mapMarkers[0].tone, "success");
-  assert.equal(projection.personnel.active > 0, true);
 });

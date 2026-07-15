@@ -7,6 +7,7 @@ export const INITIAL_WORKFLOW_STATE: WorkflowState = {
   currentPhase: "DEKA",
   completedSteps: [],
   activePersonnelCount: 0,
+  activePersonnelCodes: [],
   completedTargetCount: 0,
   evidence: [],
   checkpoints: [],
@@ -60,12 +61,22 @@ function reduceCanonicalEvent(state: WorkflowState, event: OperationEvent): Work
     case "PERSONNEL_QR_START":
       return { ...state, personnelStatus: "scanning", latestOperation: "Personel QR doğrulaması başladı" };
     case "PERSONNEL_QR_FINISH": {
-      const confirmed = completeStep(state, "personnel", event.occurredAt);
+      const personnelCode = event.payload?.personnelCode;
+      const attendanceAction = event.payload?.attendanceAction;
+      const activePersonnelCodes = personnelCode
+        ? attendanceAction === "check_out"
+          ? state.activePersonnelCodes.filter(code => code !== personnelCode)
+          : state.activePersonnelCodes.includes(personnelCode) ? state.activePersonnelCodes : [...state.activePersonnelCodes, personnelCode]
+        : state.activePersonnelCodes;
+      const confirmed = state.currentStep === "personnel" && attendanceAction === "check_in"
+        ? completeStep(state, "personnel", event.occurredAt)
+        : state;
       return {
         ...confirmed,
         personnelStatus: "confirmed",
-        activePersonnelCount: event.payload?.activePersonnelCount ?? confirmed.activePersonnelCount,
-        latestOperation: "Personel QR doğrulaması tamamlandı"
+        activePersonnelCodes,
+        activePersonnelCount: personnelCode ? activePersonnelCodes.length : event.payload?.activePersonnelCount ?? confirmed.activePersonnelCount,
+        latestOperation: attendanceAction === "check_out" ? "Personel mesaisi kapatıldı" : "Personel QR doğrulaması tamamlandı"
       };
     }
     case "CHECKPOINT_CONFIRMED": {
