@@ -14,6 +14,7 @@
     "@googlemaps/js-api-loader": "^2.1.1",
     "@supabase/supabase-js": "^2.57.4",
     "imapflow": "^1.4.7",
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.468.0",
     "mailparser": "^3.9.14",
     "next": "^15.5.9",
