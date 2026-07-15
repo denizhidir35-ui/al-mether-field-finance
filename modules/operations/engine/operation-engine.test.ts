@@ -57,6 +57,29 @@ test("canonical QR compatibility projects check-in and check-out without new eve
   assert.equal(checkedOut.activePersonnelCount, 1);
 });
 
+test("Chief reads the assigned WorkOrder and personnel QR reaches the repository projection", () => {
+  const { repository, workOrder } = setupRepository();
+  const assignedToChief = repository.getWorkOrders().find(candidate =>
+    candidate.chiefId === "SMTHR000001" && (candidate.status === "assigned" || candidate.status === "active"),
+  );
+  assert.equal(assignedToChief?.id, workOrder.id);
+  assert.deepEqual(assignedToChief?.personnelIds, ["PMTHR000001", "PMTHR000002"]);
+
+  repository.appendMany(fieldStream.slice(0, 2));
+  const readModel = projectOperationsReadModel(
+    OPERATION_PROJECTS,
+    repository.getWorkOrders(),
+    repository.getEvents(),
+    repository.getPersonnel(),
+  );
+
+  assert.equal(repository.getEvents().length, 2);
+  assert.equal(readModel.workOrderStates[workOrder.id].activePersonnelCount, 1);
+  assert.deepEqual(readModel.workOrderStates[workOrder.id].activePersonnelCodes, ["PMTHR000001"]);
+  assert.equal(readModel.personnel.active, 1);
+  assert.equal(readModel.workOrders[0].chiefId, "SMTHR000001");
+});
+
 test("full field scenario replays deterministically into the CEO read model", () => {
   const firstReplay = projectOperationsReadModel(OPERATION_PROJECTS, fixture.repository.getWorkOrders(), fieldStream, fixture.repository.getPersonnel());
   const secondReplay = projectOperationsReadModel(OPERATION_PROJECTS, fixture.repository.getWorkOrders(), fieldStream, fixture.repository.getPersonnel());
