@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ChiefAccount } from "../domain/chief-account";
 import type { ChiefCode, ProjectCode } from "../domain/identifiers";
 import type { ChiefAuthRepository } from "./chief-auth.repository";
+import { isFourDigitTemporaryPassword } from "@/modules/workforce/services/chief-pin";
 
 type ChiefProfileRow = {
   display_name: string;
@@ -19,7 +20,7 @@ export class SupabaseChiefAuthRepository implements ChiefAuthRepository {
 
   async authenticate(personnelNumber: string, password: string) {
     const employeeCode = personnelNumber.trim().toUpperCase();
-    if (!/^SMTHR\d{6}$/.test(employeeCode) || !password) return null;
+    if (!/^SMTHR\d{6}$/.test(employeeCode) || !isFourDigitTemporaryPassword(password)) return null;
 
     const { data: authData, error: authError } = await this.client.auth.signInWithPassword({
       email: chiefAuthEmail(employeeCode),

@@ -1,10 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { generateTemporaryPassword, isStrongTemporaryPassword } from "./temporary-password.ts";
+import { generateTemporaryPassword, isFourDigitTemporaryPassword } from "./temporary-password.ts";
 
-test("temporary passwords are strong, server-generated and non-repeating", () => {
-  const passwords = Array.from({ length: 100 }, generateTemporaryPassword);
-  assert.equal(new Set(passwords).size, passwords.length);
-  assert.ok(passwords.every(isStrongTemporaryPassword));
-  assert.ok(passwords.every(password => password.length === 20));
+test("HR creates random 4-digit Chief temporary passwords", () => {
+  const passwords = Array.from({ length: 40 }, generateTemporaryPassword);
+  assert.ok(passwords.every(isFourDigitTemporaryPassword));
+  assert.ok(new Set(passwords).size > 30);
 });

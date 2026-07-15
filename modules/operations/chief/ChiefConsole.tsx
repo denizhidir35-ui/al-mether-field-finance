@@ -1,67 +1,86 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Camera, LogOut, MapPin, MessageCircle, PackageCheck, RadioTower, UserRound, UsersRound } from "lucide-react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { ClipboardList, LogOut, ScanLine, UsersRound } from "lucide-react";
 import type { ChiefAccount } from "../domain/chief-account";
 import type { OperationProject } from "../domain/operation-project";
+import type { PersonnelRecord } from "../domain/personnel-record";
+import type { WorkOrder } from "../domain/work-order";
 import { useChiefAuth } from "../hooks/useChiefAuth";
 import { useOperationWorkflow } from "../hooks/useOperationWorkflow";
 import { useOperationsContext } from "../hooks/OperationsProvider";
-import { findChiefProject } from "../project/project-assignment.service";
 import { scanPersonnelQrImage } from "../services/qr.service";
-import { buildChiefExperienceViewModel, type ChiefModuleId } from "./chief-experience.view-model";
 import { ChiefLogin } from "./ChiefLogin";
-import { ChiefActionCard } from "./components/ChiefActionCard";
-import { ChiefBottomActionBar } from "./components/ChiefBottomActionBar";
-import { ChiefModuleCard } from "./components/ChiefModuleCard";
-import { ChiefMotivationCard } from "./components/ChiefMotivationCard";
-import { ChiefOperationSummary } from "./components/ChiefOperationSummary";
 
-const MODULE_ICONS = { personnel: UsersRound, deka: RadioTower, photo: Camera, location: MapPin, team: MessageCircle, problem: AlertTriangle, delivery: PackageCheck } as const;
+function PersonnelQrScanner({ chief, project, personnel }: { chief: ChiefAccount; project: OperationProject; personnel: readonly PersonnelRecord[] }) {
+  const { recordPersonnelAttendance } = useOperationWorkflow(project, chief);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-function AuthenticatedChiefConsole({ chief, project, onLogout }: { chief: ChiefAccount; project: OperationProject; onLogout: () => void }) {
-  const workflow = useOperationWorkflow(project, chief);
-  const [activeModule, setActiveModule] = useState<ChiefModuleId | null>(workflow.state.currentStep === "personnel" ? "personnel" : null);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const { workOrder, state, step, advance, recordPersonnelAttendance, capturePhoto, captureLocation, confirmDelivery, createChannelActivity } = workflow;
-  const viewModel = useMemo(() => buildChiefExperienceViewModel(chief, project, state, workOrder.personnelIds.length), [chief, project, state, workOrder.personnelIds.length]);
-
-  const openModule = useCallback((module: ChiefModuleId) => {
-    if (!activeModule) window.history.pushState({ chiefModule: module }, "");
-    setActionError(null);
-    setActiveModule(module);
-  }, [activeModule]);
-
-  const closeModule = useCallback(() => { if (activeModule) window.history.back(); }, [activeModule]);
-
-  useEffect(() => {
-    const handleBack = () => setActiveModule(null);
-    window.addEventListener("popstate", handleBack);
-    return () => window.removeEventListener("popstate", handleBack);
-  }, []);
-
-  const actionContent = useMemo(() => {
-    if (activeModule === "personnel") return { title: "Personel Mesaisi", eyebrow: `${workOrder.code} · Personel QR`, description: "Kalıcı personel QR kodunu kamerayla okut. Sistem aktif personele göre giriş veya çıkış kaydını canonical QR event'leriyle oluşturur.", actionLabel: "Personel QR Okut", disabled: workOrder.personnelIds.length === 0, fileCapture: { accept: "image/*", capture: "environment" as const, onFile: async (file: File) => { setActionError(null); try { recordPersonnelAttendance(await scanPersonnelQrImage(file)); } catch (cause) { setActionError(cause instanceof Error ? cause.message : "QR okunamadı."); } } } };
-    if (activeModule === "deka") {
-      const waitingForPersonnel = state.currentStep === "personnel";
-      const available = state.currentStep === "project" || state.currentStep === "deka" || state.currentStep === "target";
-      return { title: waitingForPersonnel ? "Personel Onayı" : step.label, eyebrow: `${workOrder.code} · DEKA`, description: waitingForPersonnel ? "Devam etmek için atanan ekipten en az bir personel QR okut." : state.currentStep === "deka" ? "DK doğrulamasını Engine'e kaydet; ardından Fotoğraf aksiyonuyla kanıtı tamamla." : "İş Emri, Target ve DEKA adımlarını mevcut workflow üzerinden ilerlet.", actionLabel: waitingForPersonnel ? "Personel QR Bekleniyor" : step.label, disabled: !available, action: advance };
+  async function scan(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setMessage(null);
+    setError(null);
+    try {
+      const personnelCode = await scanPersonnelQrImage(file);
+      recordPersonnelAttendance(personnelCode);
+      const person = personnel.find(candidate => candidate.personnelCode === personnelCode);
+      setMessage(`${person?.displayName ?? personnelCode} doğrulandı.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Personel QR doğrulanamadı.");
     }
-    if (activeModule === "photo") return { title: "Fotoğraf Kanıtı", eyebrow: `${workOrder.code} · Evidence`, description: "Kameradan alınan fotoğraf WorkOrder ile ilişkilendirilir ve PHOTO_CAPTURED event'i olarak Engine'e yazılır.", actionLabel: "Fotoğraf Çek", disabled: state.currentStep !== "deka" && state.currentStep !== "photo", fileCapture: { accept: "image/*", capture: "environment" as const, onFile: (file: File) => { setActionError(null); capturePhoto(file); } } };
-    if (activeModule === "location") return { title: "GPS Konumu", eyebrow: `${workOrder.code} · Location`, description: "Cihazın gerçek konumu WorkOrder evidence kaydına eklenir.", actionLabel: "GPS Konumunu Al", action: async () => { setActionError(null); try { await captureLocation(); } catch (cause) { setActionError(cause instanceof Error ? cause.message : "GPS alınamadı."); } } };
-    if (activeModule === "team") return { title: "Takım Kanalı", eyebrow: `${workOrder.code} · AL METHER Chat`, description: "Mevcut Chat aktivitesi CHAT_MESSAGE event'i üzerinden operasyona bağlanır.", actionLabel: "Takım Aktivitesi Oluştur", action: () => createChannelActivity("chat") };
-    if (activeModule === "problem") return { title: "Problem Bildir", eyebrow: `${workOrder.code} · Saha Problemi`, description: "Problem PROBLEM_REPORTED event'i olarak merkeze iletilir.", actionLabel: "Yeni Problem Oluştur", action: () => createChannelActivity("support") };
-    return { title: "Teslim", eyebrow: `${workOrder.code} · Target Teslimi`, description: "Target ve son fotoğraf tamamlandığında teslim Engine üzerinden doğrulanır.", actionLabel: state.currentStep === "delivery" ? "Teslimi Onayla" : "Teslim Adımı Bekleniyor", disabled: state.currentStep !== "delivery", action: confirmDelivery };
-  }, [activeModule, advance, captureLocation, capturePhoto, confirmDelivery, createChannelActivity, recordPersonnelAttendance, state.currentStep, step.label, workOrder]);
+  }
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-[480px] flex-col px-2 pb-[78px] pt-1 sm:px-3">
-      <header className="flex shrink-0 items-center justify-between rounded-[22px] border border-white/[0.06] bg-white/[0.025] px-3.5 py-2.5"><div><div className="text-[8px] font-black uppercase tracking-[0.17em] text-blue-400/75">{viewModel.identity.platformLabel}</div><div className="mt-1 text-[13px] font-black text-white">{viewModel.identity.displayName}</div><div className="mt-0.5 text-[8px] font-bold tracking-[0.08em] text-slate-500">{viewModel.identity.personnelCode} · {workOrder.code}</div></div><div className="flex items-center gap-1.5"><button type="button" aria-label="Profil" title="Profil" className="grid h-9 w-9 place-items-center rounded-xl border border-blue-400/10 bg-blue-500/[0.06] text-blue-300"><UserRound size={15} /></button><button type="button" onClick={onLogout} aria-label="Çıkış" title="Çıkış" className="grid h-9 w-9 place-items-center rounded-xl border border-white/[0.06] text-slate-500"><LogOut size={14} /></button></div></header>
-      <div className="mt-2 shrink-0"><ChiefOperationSummary {...viewModel.operation} currentAction={viewModel.currentAction} /></div>
-      <div className="mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {activeModule ? <ChiefActionCard title={actionContent.title} eyebrow={actionContent.eyebrow} description={actionContent.description} actionLabel={actionContent.actionLabel} disabled={actionContent.disabled} error={actionError} fileCapture={"fileCapture" in actionContent ? actionContent.fileCapture : undefined} complete={state.currentStep === "completed" && activeModule === "delivery"} onAction={"action" in actionContent ? actionContent.action : undefined} onBack={closeModule} /> : <div className="flex min-h-[302px] flex-col justify-end gap-2"><section className="grid grid-cols-2 gap-2">{viewModel.modules.map(module => <ChiefModuleCard key={module.id} title={module.title} metrics={module.metrics} icon={MODULE_ICONS[module.id]} tone={module.tone} onClick={() => openModule(module.id)} />)}</section><ChiefMotivationCard {...viewModel.motivation} /></div>}
-      </div>
-      <ChiefBottomActionBar activeModule={activeModule} onSelect={openModule} />
+    <section className="rounded-[24px] border border-blue-400/15 bg-blue-500/[0.055] p-4">
+      <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.16em] text-blue-300"><ScanLine size={16} /> Personel QR Tarayıcı</div>
+      <p className="mt-2 text-[10px] leading-5 text-slate-500">Yalnızca bu Şefe ve seçili İş Emrine atanmış personel QR kodları kabul edilir.</p>
+      <label className="mt-4 flex h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-blue-600 text-[11px] font-black text-white active:scale-[.99]">
+        <ScanLine size={18} /> Personel QR Okut
+        <input aria-label="Personel QR Okut" type="file" accept="image/*" capture="environment" onChange={scan} className="sr-only" />
+      </label>
+      {message ? <div className="mt-3 rounded-xl border border-emerald-400/15 bg-emerald-500/10 p-3 text-[10px] text-emerald-200">{message}</div> : null}
+      {error ? <div role="alert" className="mt-3 rounded-xl border border-rose-400/15 bg-rose-500/10 p-3 text-[10px] text-rose-200">{error}</div> : null}
+    </section>
+  );
+}
+
+function AuthenticatedChiefConsole({ chief, workOrders, projects, personnelRecords, onLogout }: { chief: ChiefAccount; workOrders: readonly WorkOrder[]; projects: readonly OperationProject[]; personnelRecords: readonly PersonnelRecord[]; onLogout: () => void }) {
+  const [selectedWorkOrderId, setSelectedWorkOrderId] = useState(workOrders[0].id);
+  const selectedWorkOrder = workOrders.find(workOrder => workOrder.id === selectedWorkOrderId) ?? workOrders[0];
+  const project = projects.find(candidate => candidate.code === selectedWorkOrder.projectCode);
+  const assignedPersonnel = useMemo(() => personnelRecords.filter(person =>
+    selectedWorkOrder.personnelIds.includes(person.personnelCode) && person.assignedChiefCode === chief.id,
+  ), [chief.id, personnelRecords, selectedWorkOrder.personnelIds]);
+
+  useEffect(() => {
+    if (!workOrders.some(workOrder => workOrder.id === selectedWorkOrderId)) setSelectedWorkOrderId(workOrders[0].id);
+  }, [selectedWorkOrderId, workOrders]);
+
+  if (!project) return <div className="grid h-full place-items-center text-[10px] font-black uppercase tracking-[0.15em] text-rose-300">İş Emri projesi yüklenemedi</div>;
+
+  return (
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-[560px] flex-col px-3 pb-4 pt-2">
+      <header className="flex shrink-0 items-center justify-between rounded-[22px] border border-white/[0.06] bg-white/[0.025] px-4 py-3">
+        <div><div className="text-[8px] font-black uppercase tracking-[0.18em] text-blue-400">AL METHER Chief</div><div className="mt-1 text-[14px] font-black text-white">{chief.displayName}</div><div className="mt-0.5 text-[9px] font-bold text-slate-500">{chief.personnelCode}</div></div>
+        <button type="button" onClick={onLogout} aria-label="Çıkış" className="grid h-10 w-10 place-items-center rounded-xl border border-white/[0.07] text-slate-500"><LogOut size={16} /></button>
+      </header>
+
+      <main className="mether-scroll mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto pb-2">
+        <section className="rounded-[24px] border border-white/[0.07] bg-white/[0.025] p-4">
+          <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.16em] text-blue-300"><ClipboardList size={16} /> Atanmış İş Emirleri · {workOrders.length}</div>
+          <div className="mt-3 space-y-2">{workOrders.map(workOrder => <button key={workOrder.id} type="button" onClick={() => setSelectedWorkOrderId(workOrder.id)} className={`w-full rounded-2xl border p-3 text-left ${selectedWorkOrder.id === workOrder.id ? "border-blue-400/25 bg-blue-500/[0.09]" : "border-white/[0.055] bg-black/10"}`}><div className="flex items-center justify-between gap-3"><div><div className="text-[11px] font-black text-white">{workOrder.code}</div><div className="mt-1 text-[9px] text-slate-500">{workOrder.projectCode} · DEKA {workOrder.targetCodes.join(", ")}</div></div><span className="rounded-lg bg-blue-500/10 px-2 py-1 text-[8px] font-black uppercase text-blue-300">{workOrder.status}</span></div></button>)}</div>
+        </section>
+
+        <section className="rounded-[24px] border border-white/[0.07] bg-white/[0.025] p-4">
+          <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.16em] text-blue-300"><UsersRound size={16} /> Atanmış Personel · {assignedPersonnel.length}</div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">{assignedPersonnel.map(person => <div key={person.id} className="rounded-2xl border border-white/[0.055] bg-black/10 p-3"><div className="text-[10px] font-black text-white">{person.displayName}</div><div className="mt-1 text-[9px] font-bold text-blue-300">{person.personnelCode}</div></div>)}</div>
+        </section>
+
+        <PersonnelQrScanner chief={chief} project={project} personnel={assignedPersonnel} />
+      </main>
     </div>
   );
 }
@@ -71,9 +90,8 @@ export function ChiefConsole({ onExit }: { onExit?: () => void }) {
   const { hydrated, readModel } = useOperationsContext();
   useEffect(() => { document.body.dataset.chiefConsoleOpen = "true"; return () => { delete document.body.dataset.chiefConsoleOpen; }; }, []);
   if (!auth.chief) return <div className="fixed inset-0 z-[80] overflow-hidden bg-[#030816] py-3 sm:py-5"><ChiefLogin error={auth.error} onLogin={auth.login} onDevelopmentLogin={auth.loginDevelopment} onExit={onExit} /></div>;
-  const workOrder = readModel.workOrders.find(candidate => candidate.chiefId === auth.chief!.id && (candidate.status === "assigned" || candidate.status === "active"));
-  if (!hydrated || (!workOrder && auth.chief.assignedProjectCodes.length > 0)) return <div className="fixed inset-0 z-[80] grid place-items-center bg-[#030816] p-5"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-300">Operasyon y\u00fckleniyor</div></div>;
-  if (!workOrder) return <div className="fixed inset-0 z-[80] grid place-items-center bg-[#030816] p-5"><div className="max-w-sm rounded-[28px] border border-blue-300/15 bg-blue-400/[0.04] p-6 text-center"><h2 className="text-lg font-black text-white">Bugün İçin Atanmış İş Emri Yok</h2><p className="mt-2 text-[11px] leading-5 text-slate-500">Yeni bir görev atandığında operasyon burada otomatik görünecek. Şimdilik dinlenebilirsin.</p><button type="button" onClick={auth.logout} className="mt-5 h-11 rounded-xl bg-blue-600 px-5 text-[10px] font-black text-white">Girişe Dön</button></div></div>;
-  const project = findChiefProject(auth.chief, readModel.projects.filter(candidate => candidate.code === workOrder.projectCode));
-  return <div className="fixed inset-0 z-[80] overflow-hidden bg-[#030816] pb-[env(safe-area-inset-bottom)] pt-[max(.5rem,env(safe-area-inset-top))] sm:py-3"><AuthenticatedChiefConsole chief={auth.chief} project={project} onLogout={auth.logout} /></div>;
+  if (!hydrated) return <div className="fixed inset-0 z-[80] grid place-items-center bg-[#030816] p-5"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-300">Operasyon yükleniyor</div></div>;
+  const assignedWorkOrders = readModel.workOrders.filter(candidate => candidate.chiefId === auth.chief!.id && (candidate.status === "assigned" || candidate.status === "active"));
+  if (assignedWorkOrders.length === 0) return <div className="fixed inset-0 z-[80] grid place-items-center bg-[#030816] p-5"><div className="max-w-sm rounded-[28px] border border-blue-300/15 bg-blue-400/[0.04] p-6 text-center"><h2 className="text-lg font-black text-white">Atanmış İş Emri Yok</h2><p className="mt-2 text-[11px] leading-5 text-slate-500">CEO tarafından atanan İş Emirleri burada görünecek.</p><button type="button" onClick={auth.logout} className="mt-5 h-11 rounded-xl bg-blue-600 px-5 text-[10px] font-black text-white">Girişe Dön</button></div></div>;
+  return <div className="fixed inset-0 z-[80] overflow-hidden bg-[#030816] pb-[env(safe-area-inset-bottom)] pt-[max(.5rem,env(safe-area-inset-top))] sm:py-3"><AuthenticatedChiefConsole chief={auth.chief} workOrders={assignedWorkOrders} projects={readModel.projects} personnelRecords={readModel.personnelRecords} onLogout={auth.logout} /></div>;
 }
