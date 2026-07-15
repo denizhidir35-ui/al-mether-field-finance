@@ -6,7 +6,7 @@ import type { ChiefAccount } from "../domain/chief-account";
 import type { OperationProject } from "../domain/operation-project";
 import { useChiefAuth } from "../hooks/useChiefAuth";
 import { useOperationWorkflow } from "../hooks/useOperationWorkflow";
-import { useOperationsReadModel } from "../hooks/useOperationsReadModel";
+import { useOperationsContext } from "../hooks/OperationsProvider";
 import { findChiefProject } from "../project/project-assignment.service";
 import { scanPersonnelQrImage } from "../services/qr.service";
 import { buildChiefExperienceViewModel, type ChiefModuleId } from "./chief-experience.view-model";
@@ -68,10 +68,11 @@ function AuthenticatedChiefConsole({ chief, project, onLogout }: { chief: ChiefA
 
 export function ChiefConsole({ onExit }: { onExit?: () => void }) {
   const auth = useChiefAuth();
-  const readModel = useOperationsReadModel();
+  const { hydrated, readModel } = useOperationsContext();
   useEffect(() => { document.body.dataset.chiefConsoleOpen = "true"; return () => { delete document.body.dataset.chiefConsoleOpen; }; }, []);
   if (!auth.chief) return <div className="fixed inset-0 z-[80] overflow-hidden bg-[#030816] py-3 sm:py-5"><ChiefLogin error={auth.error} onLogin={auth.login} onDevelopmentLogin={auth.loginDevelopment} onExit={onExit} /></div>;
   const workOrder = readModel.workOrders.find(candidate => candidate.chiefId === auth.chief!.id && (candidate.status === "assigned" || candidate.status === "active"));
+  if (!hydrated || (!workOrder && auth.chief.assignedProjectCodes.length > 0)) return <div className="fixed inset-0 z-[80] grid place-items-center bg-[#030816] p-5"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-300">Operasyon y\u00fckleniyor</div></div>;
   if (!workOrder) return <div className="fixed inset-0 z-[80] grid place-items-center bg-[#030816] p-5"><div className="max-w-sm rounded-[28px] border border-blue-300/15 bg-blue-400/[0.04] p-6 text-center"><h2 className="text-lg font-black text-white">Bugün İçin Atanmış İş Emri Yok</h2><p className="mt-2 text-[11px] leading-5 text-slate-500">Yeni bir görev atandığında operasyon burada otomatik görünecek. Şimdilik dinlenebilirsin.</p><button type="button" onClick={auth.logout} className="mt-5 h-11 rounded-xl bg-blue-600 px-5 text-[10px] font-black text-white">Girişe Dön</button></div></div>;
   const project = findChiefProject(auth.chief, readModel.projects.filter(candidate => candidate.code === workOrder.projectCode));
   return <div className="fixed inset-0 z-[80] overflow-hidden bg-[#030816] pb-[env(safe-area-inset-bottom)] pt-[max(.5rem,env(safe-area-inset-top))] sm:py-3"><AuthenticatedChiefConsole chief={auth.chief} project={project} onLogout={auth.logout} /></div>;

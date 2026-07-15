@@ -5,7 +5,7 @@ import { Fingerprint, ShieldCheck } from "lucide-react";
 
 export function ChiefLogin({ error, onLogin, onDevelopmentLogin, onExit }: { error: string | null; onLogin: (personnelNumber: string, password: string) => Promise<boolean>; onDevelopmentLogin: () => boolean; onExit?: () => void }) {
   const [personnelNumber, setPersonnelNumber] = useState("SMTHR000001");
-  const [password, setPassword] = useState("1234");
+  const [password, setPassword] = useState(process.env.NODE_ENV === "development" ? "1234" : "");
   const [loading, setLoading] = useState(false);
 
   async function submit(event: FormEvent) {
