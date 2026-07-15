@@ -14,6 +14,7 @@ import { ChiefLogin } from "./ChiefLogin";
 import type { ChiefModuleId } from "./chief-experience.view-model";
 import { ChiefActionCard } from "./components/ChiefActionCard";
 import { ChiefBottomActionBar } from "./components/ChiefBottomActionBar";
+import { PersonnelQrScanner } from "./components/PersonnelQrScanner";
 
 function SelectedOperation({ chief, workOrder, project, workOrders, personnelRecords, onSelectWorkOrder, onLogout }: {
   chief: ChiefAccount;
@@ -40,6 +41,12 @@ function SelectedOperation({ chief, workOrder, project, workOrders, personnelRec
   }, [workOrder.id]);
 
   useEffect(() => { setFieldValue(""); }, [state.currentStep]);
+
+  function recordPersonnelQr(personnelCode: Parameters<typeof recordPersonnelAttendance>[0]) {
+    recordPersonnelAttendance(personnelCode);
+    const person = assignedPersonnel.find(candidate => candidate.personnelCode === personnelCode);
+    return `${person?.displayName ?? personnelCode} doğrulandı.`;
+  }
 
   const actionContent = useMemo(() => {
     if (activeModule === "personnel") return { title: "Personel Mesaisi", eyebrow: `${workOrder.code} · Personel QR`, description: "Yalnızca bu Şefe ve seçili İş Emrine atanmış personel QR kodları kabul edilir.", actionLabel: "Personel QR Okut", disabled: workOrder.personnelIds.length === 0, fileCapture: { accept: "image/*", capture: "environment" as const, onFile: async (file: File) => { setActionError(null); try { recordPersonnelAttendance(await scanPersonnelQrImage(file)); } catch (cause) { setActionError(cause instanceof Error ? cause.message : "QR okunamadı."); } } } };
@@ -70,7 +77,7 @@ function SelectedOperation({ chief, workOrder, project, workOrders, personnelRec
     </header>
 
     <main className="mether-scroll mt-3 min-h-0 flex-1 overflow-y-auto pb-2">
-      {activeModule ? <ChiefActionCard title={actionContent.title} eyebrow={actionContent.eyebrow} description={actionContent.description} actionLabel={actionContent.actionLabel} disabled={"disabled" in actionContent ? actionContent.disabled : false} error={actionError} fileCapture={"fileCapture" in actionContent ? actionContent.fileCapture : undefined} textEntry={"textEntry" in actionContent ? actionContent.textEntry : undefined} complete={state.currentStep === "completed" && activeModule === "delivery"} onAction={"action" in actionContent ? actionContent.action : undefined} onBack={() => setActiveModule(null)} /> : <div className="space-y-3">
+      {activeModule === "personnel" ? <PersonnelQrScanner onDetected={recordPersonnelQr} onBack={() => setActiveModule(null)} /> : activeModule ? <ChiefActionCard title={actionContent.title} eyebrow={actionContent.eyebrow} description={actionContent.description} actionLabel={actionContent.actionLabel} disabled={"disabled" in actionContent ? actionContent.disabled : false} error={actionError} fileCapture={"fileCapture" in actionContent ? actionContent.fileCapture : undefined} textEntry={"textEntry" in actionContent ? actionContent.textEntry : undefined} complete={state.currentStep === "completed" && activeModule === "delivery"} onAction={"action" in actionContent ? actionContent.action : undefined} onBack={() => setActiveModule(null)} /> : <div className="space-y-3">
         <section className="rounded-[24px] border border-white/[0.07] bg-white/[0.025] p-4">
           <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.16em] text-blue-300"><ClipboardList size={16} /> Atanmış İş Emirleri · {workOrders.length}</div>
           <div className="mt-3 space-y-2">{workOrders.map(candidate => <button key={candidate.id} type="button" onClick={() => onSelectWorkOrder(candidate.id)} className={`w-full rounded-2xl border p-3 text-left ${workOrder.id === candidate.id ? "border-blue-400/25 bg-blue-500/[0.09]" : "border-white/[0.055] bg-black/10"}`}><div className="flex items-center justify-between gap-3"><div><div className="text-[11px] font-black text-white">{candidate.code}</div><div className="mt-1 text-[9px] text-slate-500">{candidate.projectCode} · DEKA {candidate.targetCodes.join(", ")}</div></div><span className="rounded-lg bg-blue-500/10 px-2 py-1 text-[8px] font-black uppercase text-blue-300">{candidate.status}</span></div></button>)}</div>

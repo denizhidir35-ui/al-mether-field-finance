@@ -9,6 +9,11 @@ export interface OperationQrService {
 type BarcodeDetectorInstance = { detect(source: ImageBitmapSource): Promise<readonly { rawValue: string }[]> };
 type BarcodeDetectorConstructor = new (options: { formats: readonly string[] }) => BarcodeDetectorInstance;
 
+export function decodePersonnelQrPixels(data: Uint8ClampedArray, width: number, height: number): FieldPersonnelCode | null {
+  const decoded = jsQR(data, width, height, { inversionAttempts: "attemptBoth" });
+  return decoded?.data ? parsePersonnelQr(decoded.data) : null;
+}
+
 export function parsePersonnelQr(rawValue: string): FieldPersonnelCode {
   const code = rawValue.trim().toUpperCase().split(":").find(part => OPERATION_CODE_PATTERNS.fieldPersonnel.test(part)) ?? "";
   if (!OPERATION_CODE_PATTERNS.fieldPersonnel.test(code)) throw new Error("Geçersiz AL METHER personel QR kodu.");
@@ -39,9 +44,9 @@ export async function scanPersonnelQrImage(file: File): Promise<FieldPersonnelCo
     if (!context) throw new Error("QR görüntüsü işlenemedi.");
     context.drawImage(bitmap, 0, 0, width, height);
     const image = context.getImageData(0, 0, width, height);
-    const decoded = jsQR(image.data, width, height, { inversionAttempts: "attemptBoth" });
-    if (!decoded?.data) throw new Error("Fotoğrafta okunabilir QR bulunamadı. QR kodunu kadraja yaklaştırıp tekrar deneyin.");
-    return parsePersonnelQr(decoded.data);
+    const decoded = decodePersonnelQrPixels(image.data, width, height);
+    if (!decoded) throw new Error("Fotoğrafta okunabilir QR bulunamadı. QR kodunu kadraja yaklaştırıp tekrar deneyin.");
+    return decoded;
   } finally {
     bitmap.close();
   }
