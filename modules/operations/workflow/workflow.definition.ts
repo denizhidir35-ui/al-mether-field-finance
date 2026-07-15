@@ -1,12 +1,14 @@
 import type { WorkflowDefinitionStep, WorkflowStepId } from "./workflow.types";
 
 export const CHIEF_WORKFLOW_DEFINITION: readonly WorkflowDefinitionStep[] = [
-  { id: "personnel", phase: "Personel", label: "Personeli Doğrula", weight: 15 },
-  { id: "project", phase: "DEKA", label: "İş Emrini Başlat", weight: 5 },
-  { id: "deka", phase: "DEKA", label: "DK Doğrula", weight: 20 },
-  { id: "target", phase: "Target", label: "Target Seç", weight: 20 },
-  { id: "photo", phase: "Kablo", label: "Operasyon Fotoğrafı", weight: 20 },
-  { id: "delivery", phase: "Teslim", label: "Teslimi Tamamla", weight: 20 },
+  { id: "personnel", phase: "Personel", label: "Personeli Doğrula", weight: 10 },
+  { id: "deka_photos", phase: "DEKA", label: "DEKA Fotoğrafları", weight: 15 },
+  { id: "parcel", phase: "Keşif", label: "Ada / Parsel", weight: 10 },
+  { id: "street", phase: "Keşif", label: "Sokak Seçimi", weight: 10 },
+  { id: "street_photos", phase: "Keşif", label: "Sokak Fotoğrafları", weight: 20 },
+  { id: "buildings", phase: "Keşif", label: "Binalar", weight: 10 },
+  { id: "building_photos", phase: "Keşif", label: "Bina Fotoğrafları", weight: 20 },
+  { id: "delivery", phase: "Teslim", label: "Saha Kaydını Tamamla", weight: 5 },
   { id: "completed", phase: "Tamamlandı", label: "Operasyon Tamamlandı", weight: 0 }
 ] as const;
 

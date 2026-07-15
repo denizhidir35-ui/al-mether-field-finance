@@ -24,8 +24,14 @@ const CURRENT_ACTIONS: Record<WorkflowState["currentStep"], string> = {
   project: "DEKA BAŞLAT",
   deka: "DK DOĞRULA",
   personnel: "PERSONEL QR",
-  target: "BİNA SEÇ",
+  target: "ADA / PARSEL",
   photo: "SON FOTOĞRAF",
+  deka_photos: "DEKA FOTOĞRAFLARI",
+  parcel: "ADA / PARSEL",
+  street: "SOKAK SEÇ",
+  street_photos: "SOKAK FOTOĞRAFLARI",
+  buildings: "BİNALARI KAYDET",
+  building_photos: "BİNA FOTOĞRAFLARI",
   delivery: "TESLİM",
   completed: "OPERASYON TAMAMLANDI"
 };
@@ -61,7 +67,7 @@ export function buildChiefExperienceViewModel(chief: ChiefAccount, project: Oper
       { id: "location", title: "GPS", tone: workflow.evidence.some(item => item.type === "location") ? "complete" : "active", metrics: [workflow.evidence.some(item => item.type === "location") ? "Konum alındı" : "Konum bekliyor", "GPS", "Engine kayıt"] },
       { id: "team", title: "Takım", tone: workflow.unreadMessageCount > 0 ? "warning" : "active", metrics: [`${workflow.unreadMessageCount} okunmamış`, "Son mesaj", "Ekip hazır"] },
       { id: "problem", title: "Problem", tone: workflow.criticalProblemCount > 0 ? "critical" : "active", metrics: [`${workflow.criticalProblemCount} kritik`, `${workflow.supportCount} açık`, "Yeni problem"] },
-      { id: "delivery", title: "Teslim", tone: workflow.workOrderStatus === "completed" ? "complete" : workflow.currentStep === "delivery" ? "active" : "passive", metrics: [`${workflow.completedTargetCount} target`, workflow.currentStep === "delivery" ? "Hazır" : "Akış bekliyor", workflow.workOrderStatus === "completed" ? "Tamamlandı" : "Engine kayıt"] }
+      { id: "delivery", title: "Teslim", tone: workflow.workOrderStatus === "completed" ? "complete" : workflow.currentStep === "delivery" ? "active" : "passive", metrics: [`${workflow.buildingReferences.length} bina`, workflow.currentStep === "delivery" ? "Hazır" : "Akış bekliyor", workflow.workOrderStatus === "completed" ? "Tamamlandı" : "Engine kayıt"] }
     ],
     motivation: { leaderCode: "SMTHR000002", leaderProgress: 81, chiefCode: chief.personnelCode, chiefProgress: project.progress }
   };

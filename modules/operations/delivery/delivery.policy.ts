@@ -1,7 +1,7 @@
 import type { WorkflowState } from "../workflow/workflow.types";
 
 export function canConfirmDelivery(state: WorkflowState) {
-  const hasTarget = Boolean(state.selectedTargetId);
-  const hasFinalPhoto = state.evidence.some(evidence => evidence.stepId === "photo" && evidence.type === "photo");
-  return hasTarget && hasFinalPhoto;
+  const hasBuilding = state.buildingReferences.length > 0;
+  const hasBuildingPhoto = state.evidence.some(evidence => evidence.stepId === "building_photos" && evidence.type === "photo");
+  return hasBuilding && hasBuildingPhoto;
 }

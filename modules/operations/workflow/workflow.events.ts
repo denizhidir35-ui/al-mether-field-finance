@@ -39,6 +39,7 @@ export type OperationEvent = {
     evidence?: OperationEvidence;
     message?: string;
     severity?: OperationProblemSeverity;
+    fieldValue?: string;
   };
   occurredAt: string;
   version: 1;

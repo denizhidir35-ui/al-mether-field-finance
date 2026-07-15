@@ -46,6 +46,9 @@ export function projectOperationsReadModel(baseProjects: readonly OperationProje
     const markerStatus = workOrder ? workflow.markerStatus : "idle";
     return {
       ...project,
+      island: workflow.parcelReference ?? project.island,
+      streets: workflow.streetName ? Math.max(project.streets, 1) : project.streets,
+      buildings: workflow.buildingReferences.length || project.buildings,
       progress,
       activePersonnelCount: workOrder ? workflow.activePersonnelCount : 0,
       completedTargetCount: workOrder ? workflow.completedTargetCount : 0,
@@ -72,7 +75,7 @@ export function projectOperationsReadModel(baseProjects: readonly OperationProje
     { label: "Aktif Proje", mobileLabel: "Projeler", value: String(workOrders.filter(workOrder => workOrder.status === "active" || workOrder.status === "assigned").length), detail: `${workOrders.length} İş Emri` },
     { label: "Aktif Şef", mobileLabel: "Şefler", value: String(activeChiefCount), detail: "WorkOrder projection" },
     { label: "Aktif Personel", mobileLabel: "Personel", value: String(activePersonnel), detail: "Read Model tarafından hesaplandı" },
-    { label: "Tamamlanan Target", mobileLabel: "Target", value: String(completedTargets), detail: "Teslimi doğrulanan hedefler" },
+    { label: "Tamamlanan Saha Kaydı", mobileLabel: "Tamamlanan", value: String(completedTargets), detail: "Teslimi doğrulanan saha kayıtları" },
     { label: "Problem Kayıtları", mobileLabel: "Problem", value: String(supportCount), detail: `${criticalProblemCount} kritik kayıt` },
     { label: "Operasyon Fotoğrafı", mobileLabel: "Fotoğraf", value: String(photoCount), detail: "Sistemle ilişkilendirilen kanıtlar" }
   ] as const;

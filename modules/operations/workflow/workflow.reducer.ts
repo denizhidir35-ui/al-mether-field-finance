@@ -6,6 +6,7 @@ export const INITIAL_WORKFLOW_STATE: WorkflowState = {
   currentStep: "personnel",
   currentPhase: "Personel",
   completedSteps: [],
+  buildingReferences: [],
   activePersonnelCount: 0,
   activePersonnelCodes: [],
   completedTargetCount: 0,
@@ -80,15 +81,30 @@ function reduceCanonicalEvent(state: WorkflowState, event: OperationEvent): Work
       };
     }
     case "CHECKPOINT_CONFIRMED": {
+      const fieldValue = event.payload?.fieldValue?.trim();
+      if (event.stepId === "parcel" && fieldValue && state.currentStep === "parcel") {
+        return completeStep({ ...state, parcelReference: fieldValue }, "parcel", event.occurredAt);
+      }
+      if (event.stepId === "street" && fieldValue && state.currentStep === "street") {
+        return completeStep({ ...state, streetName: fieldValue }, "street", event.occurredAt);
+      }
+      if (event.stepId === "buildings" && fieldValue && state.currentStep === "buildings") {
+        const buildingReferences = fieldValue.split(",").map(value => value.trim()).filter(Boolean);
+        return completeStep({ ...state, buildingReferences }, "buildings", event.occurredAt);
+      }
       if (!event.payload?.checkpointId) return state;
       const checkpoints = state.checkpoints.includes(event.payload.checkpointId) ? state.checkpoints : [...state.checkpoints, event.payload.checkpointId];
       return { ...state, checkpoints, latestOperation: "Kalite kontrolü doğrulandı" };
     }
     case "PHOTO_CAPTURED": {
       if (!event.payload?.evidence) return state;
-      const withEvidence = { ...state, evidence: [...state.evidence, event.payload.evidence], latestOperation: "Fotoğraf kaydedildi" };
+      const startsFieldOperation = event.stepId === "deka_photos" && state.currentStep === "deka_photos";
+      const withEvidence = { ...state, evidence: [...state.evidence, event.payload.evidence], workOrderStatus: startsFieldOperation ? "active" as const : state.workOrderStatus, markerStatus: startsFieldOperation ? "active" as const : state.markerStatus, latestOperation: "Fotoğraf kaydedildi" };
       if (event.stepId === "deka" && withEvidence.checkpoints.includes("dk_correct")) return completeStep(withEvidence, "deka", event.occurredAt);
       if (event.stepId === "photo" && state.currentStep === "photo") return completeStep(withEvidence, "photo", event.occurredAt);
+      if (event.stepId === "deka_photos" && state.currentStep === "deka_photos") return completeStep(withEvidence, "deka_photos", event.occurredAt);
+      if (event.stepId === "street_photos" && state.currentStep === "street_photos" && withEvidence.evidence.filter(evidence => evidence.stepId === "street_photos" && evidence.type === "photo").length >= 4) return completeStep(withEvidence, "street_photos", event.occurredAt);
+      if (event.stepId === "building_photos" && state.currentStep === "building_photos") return completeStep(withEvidence, "building_photos", event.occurredAt);
       return withEvidence;
     }
     case "LOCATION_CAPTURED":

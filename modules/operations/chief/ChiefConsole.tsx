@@ -27,6 +27,7 @@ function SelectedOperation({ chief, workOrder, project, workOrders, personnelRec
   const workflow = useOperationWorkflow(project, chief);
   const [activeModule, setActiveModule] = useState<ChiefModuleId | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [fieldValue, setFieldValue] = useState("");
   const { state, step, advance, recordPersonnelAttendance, capturePhoto, captureLocation, confirmDelivery, createChannelActivity } = workflow;
   const assignedPersonnel = useMemo(() => personnelRecords.filter(person =>
     workOrder.personnelIds.includes(person.personnelCode) && person.assignedChiefCode === chief.id,
@@ -35,21 +36,32 @@ function SelectedOperation({ chief, workOrder, project, workOrders, personnelRec
   useEffect(() => {
     setActiveModule(null);
     setActionError(null);
+    setFieldValue("");
   }, [workOrder.id]);
+
+  useEffect(() => { setFieldValue(""); }, [state.currentStep]);
 
   const actionContent = useMemo(() => {
     if (activeModule === "personnel") return { title: "Personel Mesaisi", eyebrow: `${workOrder.code} · Personel QR`, description: "Yalnızca bu Şefe ve seçili İş Emrine atanmış personel QR kodları kabul edilir.", actionLabel: "Personel QR Okut", disabled: workOrder.personnelIds.length === 0, fileCapture: { accept: "image/*", capture: "environment" as const, onFile: async (file: File) => { setActionError(null); try { recordPersonnelAttendance(await scanPersonnelQrImage(file)); } catch (cause) { setActionError(cause instanceof Error ? cause.message : "QR okunamadı."); } } } };
+    const photoSteps = ["deka_photos", "street_photos", "building_photos"] as const;
+    const isPhotoStep = photoSteps.some(candidate => candidate === state.currentStep);
+    const photoCount = state.evidence.filter(evidence => evidence.stepId === state.currentStep && evidence.type === "photo").length;
+    const requiredPhotos = state.currentStep === "street_photos" ? 4 : 1;
+    const photoAction = { title: step.label, eyebrow: `${workOrder.code} · Fotoğraf Akışı`, description: `${photoCount} / ${requiredPhotos} fotoğraf kaydedildi. Fotoğraf doğrudan seçili İş Emrine bağlanır.`, actionLabel: photoCount + 1 >= requiredPhotos ? "Son Fotoğrafı Çek" : `Fotoğraf Çek · ${photoCount + 1}/${requiredPhotos}`, fileCapture: { accept: "image/*", capture: "environment" as const, onFile: (file: File) => { setActionError(null); capturePhoto(file); } } };
     if (activeModule === "deka") {
-      const waitingForPersonnel = state.currentStep === "personnel";
-      const available = state.currentStep === "project" || state.currentStep === "deka" || state.currentStep === "target";
-      return { title: waitingForPersonnel ? "Personel Onayı" : step.label, eyebrow: `${workOrder.code} · DEKA`, description: waitingForPersonnel ? "Devam etmek için atanan ekipten en az bir personel QR okut." : "Mevcut DEKA adımını Operation Engine üzerinden ilerlet.", actionLabel: waitingForPersonnel ? "Personel QR Bekleniyor" : step.label, disabled: !available, action: advance };
+      if (state.currentStep === "personnel") return { title: "Personel Onayı", eyebrow: `${workOrder.code} · DEKA`, description: "DEKA fotoğraflarına başlamadan önce atanan ekipten bir personel QR okut.", actionLabel: "Personel QR Bekleniyor", disabled: true, action: () => undefined };
+      if (isPhotoStep) return photoAction;
+      if (state.currentStep === "parcel") return { title: "Ada / Parsel", eyebrow: `${workOrder.code} · Saha Konumu`, description: "Sahada doğrulanan Ada ve Parsel bilgisini kaydet.", actionLabel: "Ada / Parseli Kaydet", disabled: !fieldValue.trim(), textEntry: { label: "Ada / Parsel", placeholder: "Örn. Ada 85 / Parsel 12", value: fieldValue, onChange: setFieldValue }, action: () => advance(fieldValue) };
+      if (state.currentStep === "street") return { title: "Sokak Seçimi", eyebrow: `${workOrder.code} · Saha Konumu`, description: "Fotoğraflanacak sokağın adını kaydet.", actionLabel: "Sokağı Kaydet", disabled: !fieldValue.trim(), textEntry: { label: "Sokak", placeholder: "Örn. 1720 Sokak", value: fieldValue, onChange: setFieldValue }, action: () => advance(fieldValue) };
+      if (state.currentStep === "buildings") return { title: "Binalar", eyebrow: `${workOrder.code} · Saha Yapıları`, description: "Sahada tespit edilen bina numaralarını virgülle ayırarak kaydet.", actionLabel: "Binaları Kaydet", disabled: !fieldValue.trim(), textEntry: { label: "Bina Numaraları", placeholder: "Örn. 12, 14, 16", value: fieldValue, onChange: setFieldValue }, action: () => advance(fieldValue) };
+      return { title: step.label, eyebrow: `${workOrder.code} · DEKA`, description: "Fotoğraf tabanlı saha akışının sıradaki adımı.", actionLabel: step.label, disabled: true, action: () => undefined };
     }
-    if (activeModule === "photo") return { title: "Fotoğraf Kanıtı", eyebrow: `${workOrder.code} · Evidence`, description: "Fotoğraf seçili İş Emriyle ilişkilendirilir ve Engine'e kaydedilir.", actionLabel: "Fotoğraf Çek", disabled: state.currentStep !== "deka" && state.currentStep !== "photo", fileCapture: { accept: "image/*", capture: "environment" as const, onFile: (file: File) => { setActionError(null); capturePhoto(file); } } };
+    if (activeModule === "photo") return isPhotoStep ? photoAction : { title: "Fotoğraf", eyebrow: `${workOrder.code} · Evidence`, description: `Sıradaki fotoğraf aşaması: ${step.label}.`, actionLabel: "Fotoğraf Aşaması Bekleniyor", disabled: true, action: () => undefined };
     if (activeModule === "location") return { title: "GPS Konumu", eyebrow: `${workOrder.code} · Location`, description: "Cihazın gerçek konumu seçili İş Emrine eklenir.", actionLabel: "GPS Konumunu Al", action: async () => { setActionError(null); try { await captureLocation(); } catch (cause) { setActionError(cause instanceof Error ? cause.message : "GPS alınamadı."); } } };
     if (activeModule === "team") return { title: "Takım Kanalı", eyebrow: `${workOrder.code} · AL METHER Chat`, description: "Takım aktivitesi mevcut Operation Engine akışına kaydedilir.", actionLabel: "Takım Aktivitesi Oluştur", action: () => createChannelActivity("chat") };
     if (activeModule === "problem") return { title: "Problem Bildir", eyebrow: `${workOrder.code} · Saha Problemi`, description: "Problem seçili İş Emrine bağlanarak merkeze iletilir.", actionLabel: "Yeni Problem Oluştur", action: () => createChannelActivity("support") };
-    return { title: "Teslim", eyebrow: `${workOrder.code} · Target Teslimi`, description: "Operasyon adımları tamamlandığında teslimi Engine üzerinden onayla.", actionLabel: state.currentStep === "delivery" ? "Teslimi Onayla" : "Teslim Adımı Bekleniyor", disabled: state.currentStep !== "delivery", action: confirmDelivery };
-  }, [activeModule, advance, captureLocation, capturePhoto, confirmDelivery, createChannelActivity, recordPersonnelAttendance, state.currentStep, step.label, workOrder]);
+    return { title: "Teslim", eyebrow: `${workOrder.code} · Saha Kaydı`, description: "Bina kayıtları ve bina fotoğrafları tamamlandığında saha kaydını onayla.", actionLabel: state.currentStep === "delivery" ? "Saha Kaydını Tamamla" : "Teslim Adımı Bekleniyor", disabled: state.currentStep !== "delivery", action: confirmDelivery };
+  }, [activeModule, advance, captureLocation, capturePhoto, confirmDelivery, createChannelActivity, fieldValue, recordPersonnelAttendance, state.currentStep, state.evidence, step.label, workOrder]);
 
   return <div className="mx-auto flex h-full min-h-0 w-full max-w-[560px] flex-col px-3 pb-[84px] pt-2">
     <header className="flex shrink-0 items-center justify-between rounded-[22px] border border-white/[0.06] bg-white/[0.025] px-4 py-3">
@@ -58,7 +70,7 @@ function SelectedOperation({ chief, workOrder, project, workOrders, personnelRec
     </header>
 
     <main className="mether-scroll mt-3 min-h-0 flex-1 overflow-y-auto pb-2">
-      {activeModule ? <ChiefActionCard title={actionContent.title} eyebrow={actionContent.eyebrow} description={actionContent.description} actionLabel={actionContent.actionLabel} disabled={actionContent.disabled} error={actionError} fileCapture={"fileCapture" in actionContent ? actionContent.fileCapture : undefined} complete={state.currentStep === "completed" && activeModule === "delivery"} onAction={"action" in actionContent ? actionContent.action : undefined} onBack={() => setActiveModule(null)} /> : <div className="space-y-3">
+      {activeModule ? <ChiefActionCard title={actionContent.title} eyebrow={actionContent.eyebrow} description={actionContent.description} actionLabel={actionContent.actionLabel} disabled={"disabled" in actionContent ? actionContent.disabled : false} error={actionError} fileCapture={"fileCapture" in actionContent ? actionContent.fileCapture : undefined} textEntry={"textEntry" in actionContent ? actionContent.textEntry : undefined} complete={state.currentStep === "completed" && activeModule === "delivery"} onAction={"action" in actionContent ? actionContent.action : undefined} onBack={() => setActiveModule(null)} /> : <div className="space-y-3">
         <section className="rounded-[24px] border border-white/[0.07] bg-white/[0.025] p-4">
           <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.16em] text-blue-300"><ClipboardList size={16} /> Atanmış İş Emirleri · {workOrders.length}</div>
           <div className="mt-3 space-y-2">{workOrders.map(candidate => <button key={candidate.id} type="button" onClick={() => onSelectWorkOrder(candidate.id)} className={`w-full rounded-2xl border p-3 text-left ${workOrder.id === candidate.id ? "border-blue-400/25 bg-blue-500/[0.09]" : "border-white/[0.055] bg-black/10"}`}><div className="flex items-center justify-between gap-3"><div><div className="text-[11px] font-black text-white">{candidate.code}</div><div className="mt-1 text-[9px] text-slate-500">{candidate.projectCode} · DEKA {candidate.targetCodes.join(", ")}</div></div><span className="rounded-lg bg-blue-500/10 px-2 py-1 text-[8px] font-black uppercase text-blue-300">{candidate.status}</span></div></button>)}</div>

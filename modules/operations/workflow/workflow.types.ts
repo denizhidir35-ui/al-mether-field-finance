@@ -1,7 +1,7 @@
 import type { OperationEvidence } from "../domain/operation-evidence";
 import type { FieldPersonnelCode } from "../domain/identifiers";
 
-export type WorkflowStepId = "project" | "deka" | "personnel" | "target" | "photo" | "delivery" | "completed";
+export type WorkflowStepId = "project" | "deka" | "personnel" | "target" | "photo" | "deka_photos" | "parcel" | "street" | "street_photos" | "buildings" | "building_photos" | "delivery" | "completed";
 export type WorkflowPhase = "DEKA" | "Keşif" | "Personel" | "Kablo" | "Target" | "Box" | "Teslim" | "Tamamlandı";
 
 export type QualityCheckpointId = "dk_correct" | "cable_not_sagging" | "label_left" | "measurement_correct" | "clips_correct" | "box_intact" | "box_location_correct";
@@ -11,6 +11,9 @@ export type WorkflowState = {
   currentPhase: WorkflowPhase;
   completedSteps: readonly WorkflowStepId[];
   selectedTargetId?: string;
+  parcelReference?: string;
+  streetName?: string;
+  buildingReferences: readonly string[];
   activePersonnelCount: number;
   activePersonnelCodes: readonly FieldPersonnelCode[];
   completedTargetCount: number;

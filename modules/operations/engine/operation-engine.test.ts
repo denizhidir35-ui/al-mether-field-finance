@@ -21,24 +21,25 @@ function event(type: OperationEventType, sequence: number, overrides: Partial<Op
   return { id: `event-${sequence}`, type, projectCode: fixture.workOrder.projectCode, workOrderId: fixture.workOrder.id, chiefId: fixture.workOrder.chiefId, deduplicationKey: `${fixture.workOrder.id}:${type}:${sequence}`, context: { module: "workflow", action: type.toLowerCase() }, occurredAt, version: 1, ...overrides };
 }
 
-const dekaEvidence = { id: "evidence-deka-1", workOrderId: fixture.workOrder.id, stepId: "deka", type: "photo" as const, requirement: "required" as const, capturedAt: occurredAt, syncStatus: "local" as const, analysisStatus: "not_requested" as const };
-const finalEvidence = { ...dekaEvidence, id: "evidence-photo-1", stepId: "photo" };
+const dekaEvidence = { id: "evidence-deka-1", workOrderId: fixture.workOrder.id, stepId: "deka_photos", type: "photo" as const, requirement: "required" as const, capturedAt: occurredAt, syncStatus: "local" as const, analysisStatus: "not_requested" as const };
+const streetEvidence = { ...dekaEvidence, id: "evidence-street-1", stepId: "street_photos" };
+const buildingEvidence = { ...dekaEvidence, id: "evidence-building-1", stepId: "building_photos" };
 
 const fieldStream: readonly OperationEvent[] = [
   event("PERSONNEL_QR_START", 1, { stepId: "personnel", context: { module: "personnel", action: "personnel_qr_scan" } }),
   event("PERSONNEL_QR_FINISH", 2, { stepId: "personnel", context: { module: "personnel", action: "personnel_check_in" }, payload: { personnelCode: fixture.first.personnelCode, attendanceAction: "check_in" } }),
-  event("DEKA_STARTED", 3, { stepId: "project", context: { module: "deka", action: "deka_started" } }),
-  event("CHECKPOINT_CONFIRMED", 4, { stepId: "deka", context: { module: "deka", action: "dk_correct" }, payload: { checkpointId: "dk_correct" } }),
-  event("PHOTO_CAPTURED", 5, { stepId: "deka", context: { module: "workflow", action: "photo_captured" }, payload: { evidence: dekaEvidence } }),
-  event("PERSONNEL_QR_START", 6, { stepId: "personnel", context: { module: "personnel", action: "personnel_qr_scan" } }),
-  event("PERSONNEL_QR_FINISH", 7, { stepId: "personnel", context: { module: "personnel", action: "personnel_check_in" }, payload: { personnelCode: fixture.second.personnelCode, attendanceAction: "check_in" } }),
-  event("TARGET_SELECTED", 8, { stepId: "target", targetCode: "TGT-0001" }),
-  event("LOCATION_CAPTURED", 9, { stepId: "photo", payload: { evidence: { ...finalEvidence, id: "evidence-location-1", type: "location", coordinates: { lat: 38.4554, lng: 27.1197 } } } }),
-  event("PHOTO_CAPTURED", 10, { stepId: "photo", payload: { evidence: finalEvidence } }),
-  event("PROBLEM_REPORTED", 11, { context: { module: "problem", action: "problem_reported" }, payload: { message: "Kablo sarkması", severity: "warning" } }),
-  event("CHAT_MESSAGE", 12, { context: { module: "team", action: "chat_message" }, payload: { message: "Ekip teslim noktasında" } }),
-  event("DELIVERY_CONFIRMED", 13, { stepId: "delivery", targetCode: "TGT-0001" }),
-  event("WORKFLOW_COMPLETED", 14, { stepId: "completed", targetCode: "TGT-0001" })
+  event("PERSONNEL_QR_START", 3, { stepId: "personnel", context: { module: "personnel", action: "personnel_qr_scan" } }),
+  event("PERSONNEL_QR_FINISH", 4, { stepId: "personnel", context: { module: "personnel", action: "personnel_check_in" }, payload: { personnelCode: fixture.second.personnelCode, attendanceAction: "check_in" } }),
+  event("PHOTO_CAPTURED", 5, { stepId: "deka_photos", context: { module: "workflow", action: "photo_captured" }, payload: { evidence: dekaEvidence } }),
+  event("CHECKPOINT_CONFIRMED", 6, { stepId: "parcel", context: { module: "deka", action: "parcel_selected" }, payload: { fieldValue: "Ada 85 / Parsel 12" } }),
+  event("CHECKPOINT_CONFIRMED", 7, { stepId: "street", context: { module: "deka", action: "street_selected" }, payload: { fieldValue: "1720 Sokak" } }),
+  ...[1, 2, 3, 4].map(index => event("PHOTO_CAPTURED", 7 + index, { stepId: "street_photos", context: { module: "workflow", action: "photo_captured" }, payload: { evidence: { ...streetEvidence, id: `evidence-street-${index}` } } })),
+  event("CHECKPOINT_CONFIRMED", 12, { stepId: "buildings", context: { module: "deka", action: "buildings_selected" }, payload: { fieldValue: "12, 14" } }),
+  event("PHOTO_CAPTURED", 13, { stepId: "building_photos", context: { module: "workflow", action: "photo_captured" }, payload: { evidence: buildingEvidence } }),
+  event("PROBLEM_REPORTED", 14, { context: { module: "problem", action: "problem_reported" }, payload: { message: "Saha problemi", severity: "warning" } }),
+  event("CHAT_MESSAGE", 15, { context: { module: "team", action: "chat_message" }, payload: { message: "Ekip saha kaydını tamamladı" } }),
+  event("DELIVERY_CONFIRMED", 16, { stepId: "delivery" }),
+  event("WORKFLOW_COMPLETED", 17, { stepId: "completed" })
 ];
 
 test("CEO creates the real WorkOrder root with permanent personnel identities", () => {
@@ -49,10 +50,10 @@ test("CEO creates the real WorkOrder root with permanent personnel identities", 
 });
 
 test("canonical QR compatibility projects check-in and check-out without new event names", () => {
-  const checkedIn = reduceWorkflowEvents(fieldStream.slice(0, 7));
+  const checkedIn = reduceWorkflowEvents(fieldStream.slice(0, 4));
   assert.deepEqual(checkedIn.activePersonnelCodes, ["PMTHR000001", "PMTHR000002"]);
   assert.equal(checkedIn.activePersonnelCount, 2);
-  const checkedOut = reduceWorkflowEvents([...fieldStream.slice(0, 7), event("PERSONNEL_QR_START", 20), event("PERSONNEL_QR_FINISH", 21, { payload: { personnelCode: fixture.first.personnelCode, attendanceAction: "check_out" }, context: { module: "personnel", action: "personnel_check_out" } })]);
+  const checkedOut = reduceWorkflowEvents([...fieldStream.slice(0, 4), event("PERSONNEL_QR_START", 20), event("PERSONNEL_QR_FINISH", 21, { payload: { personnelCode: fixture.first.personnelCode, attendanceAction: "check_out" }, context: { module: "personnel", action: "personnel_check_out" } })]);
   assert.deepEqual(checkedOut.activePersonnelCodes, ["PMTHR000002"]);
   assert.equal(checkedOut.activePersonnelCount, 1);
 });
@@ -87,10 +88,15 @@ test("full field scenario replays deterministically into the CEO read model", ()
   assert.equal(firstReplay.workOrders[0].status, "completed");
   assert.equal(firstReplay.personnel.active, 2);
   assert.equal(firstReplay.problems.open, 1);
-  assert.equal(firstReplay.projects[0].photoCount, 2);
+  assert.equal(firstReplay.projects[0].photoCount, 6);
   assert.equal(firstReplay.projects[0].completedTargetCount, 1);
   assert.equal(firstReplay.mapMarkers[0].tone, "success");
-  assert.equal(firstReplay.latestPhoto?.id, "evidence-photo-1");
+  assert.equal(firstReplay.latestPhoto?.id, "evidence-building-1");
+  assert.equal(firstReplay.workOrderStates[fixture.workOrder.id].parcelReference, "Ada 85 / Parsel 12");
+  assert.equal(firstReplay.workOrderStates[fixture.workOrder.id].streetName, "1720 Sokak");
+  assert.deepEqual(firstReplay.workOrderStates[fixture.workOrder.id].buildingReferences, ["12", "14"]);
+  assert.deepEqual(firstReplay.workOrderStates[fixture.workOrder.id].completedSteps, ["personnel", "deka_photos", "parcel", "street", "street_photos", "buildings", "building_photos", "delivery"]);
+  assert.equal(fieldStream.some(item => item.type === "TARGET_SELECTED"), false);
 });
 
 test("repository rejects unknown WorkOrders and deduplicates event retries", () => {

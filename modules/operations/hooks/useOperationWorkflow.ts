@@ -2,7 +2,7 @@
 
 import type { ChiefAccount } from "../domain/chief-account";
 import type { OperationProject } from "../domain/operation-project";
-import type { FieldPersonnelCode, TargetCode } from "../domain/identifiers";
+import type { FieldPersonnelCode } from "../domain/identifiers";
 import { canConfirmDelivery } from "../delivery/delivery.policy";
 import { createPhotoEvidence } from "../photos/photo-evidence.factory";
 import { systemOperationClock } from "../services/operation-clock.service";
@@ -22,7 +22,7 @@ export function useOperationWorkflow(project: OperationProject, chief: ChiefAcco
   const common = { projectCode: project.code, workOrderId: assignedWorkOrder.id, chiefId: chief.id } as const;
   const key = (fact: string) => `${assignedWorkOrder.id}:${fact}`;
 
-  function advance() {
+  function advance(fieldValue?: string) {
     if (state.currentStep === "project") {
       dispatch({ ...common, type: "DEKA_STARTED", deduplicationKey: key("deka-started"), stepId: "project", context: { module: "deka", action: "deka_started" } });
       return;
@@ -34,9 +34,10 @@ export function useOperationWorkflow(project: OperationProject, chief: ChiefAcco
     if (state.currentStep === "personnel") {
       return;
     }
-    if (state.currentStep === "target") {
-      const targetCode: TargetCode = assignedWorkOrder.targetCodes[0] ?? "TGT-0001";
-      dispatch({ ...common, type: "TARGET_SELECTED", deduplicationKey: key(`target-selected-${targetCode}`), stepId: "target", targetCode, context: { module: "workflow", action: "target_selected" } });
+    if (state.currentStep === "parcel" || state.currentStep === "street" || state.currentStep === "buildings") {
+      const value = fieldValue?.trim();
+      if (!value) return;
+      dispatch({ ...common, type: "CHECKPOINT_CONFIRMED", deduplicationKey: key(`${state.currentStep}-${value}`), stepId: state.currentStep, context: { module: "deka", action: `${state.currentStep}_selected` }, payload: { fieldValue: value } });
       return;
     }
     if (state.currentStep === "photo") {
@@ -46,10 +47,9 @@ export function useOperationWorkflow(project: OperationProject, chief: ChiefAcco
     }
     if (state.currentStep === "delivery") {
       if (!canConfirmDelivery(state)) return;
-      const targetCode: TargetCode = assignedWorkOrder.targetCodes[0] ?? "TGT-0001";
       dispatchMany([
-        { ...common, type: "DELIVERY_CONFIRMED", deduplicationKey: key(`delivery-confirmed-${targetCode}`), stepId: "delivery", targetCode, context: { module: "delivery", action: "delivery_confirmed" } },
-        { ...common, type: "WORKFLOW_COMPLETED", deduplicationKey: key("workflow-completed"), stepId: "completed", targetCode, context: { module: "workflow", action: "workflow_completed" } }
+        { ...common, type: "DELIVERY_CONFIRMED", deduplicationKey: key("delivery-confirmed"), stepId: "delivery", context: { module: "delivery", action: "delivery_confirmed" } },
+        { ...common, type: "WORKFLOW_COMPLETED", deduplicationKey: key("workflow-completed"), stepId: "completed", context: { module: "workflow", action: "workflow_completed" } }
       ]);
     }
   }
@@ -66,7 +66,7 @@ export function useOperationWorkflow(project: OperationProject, chief: ChiefAcco
   }
 
   function capturePhoto(file: File) {
-    const stepId = state.currentStep === "deka" ? "deka" : "photo";
+    const stepId = state.currentStep;
     const evidence = { ...createPhotoEvidence(assignedWorkOrder.id, stepId, systemOperationClock), localReference: file.name };
     dispatch({ ...common, type: "PHOTO_CAPTURED", deduplicationKey: key(`photo-${evidence.id}`), stepId, context: { module: "workflow", action: "photo_captured" }, payload: { evidence } });
   }
@@ -85,11 +85,10 @@ export function useOperationWorkflow(project: OperationProject, chief: ChiefAcco
   }
 
   function confirmDelivery() {
-    if (!canConfirmDelivery(state)) throw new Error("Teslim için Target ve son fotoğraf tamamlanmalıdır.");
-    const targetCode: TargetCode = assignedWorkOrder.targetCodes[0] ?? "TGT-0001";
+    if (!canConfirmDelivery(state)) throw new Error("Teslim için bina kaydı ve bina fotoğrafı tamamlanmalıdır.");
     dispatchMany([
-      { ...common, type: "DELIVERY_CONFIRMED", deduplicationKey: key(`delivery-confirmed-${targetCode}`), stepId: "delivery", targetCode, context: { module: "delivery", action: "delivery_confirmed" } },
-      { ...common, type: "WORKFLOW_COMPLETED", deduplicationKey: key("workflow-completed"), stepId: "completed", targetCode, context: { module: "workflow", action: "workflow_completed" } }
+      { ...common, type: "DELIVERY_CONFIRMED", deduplicationKey: key("delivery-confirmed"), stepId: "delivery", context: { module: "delivery", action: "delivery_confirmed" } },
+      { ...common, type: "WORKFLOW_COMPLETED", deduplicationKey: key("workflow-completed"), stepId: "completed", context: { module: "workflow", action: "workflow_completed" } }
     ]);
   }
 

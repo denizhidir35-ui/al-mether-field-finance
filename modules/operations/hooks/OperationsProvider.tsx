@@ -40,7 +40,7 @@ function projectCatalog(workOrders: readonly NewWorkOrder[]) {
       name: `${workOrder.projectCode} Saha Operasyonu`,
       city: "İzmir",
       district: "Belirlenmedi",
-      island: workOrder.targetCodes[0]?.replace("TGT-", "") ?? "-",
+      island: "-",
       status: "Planlama",
       progress: 0,
       supervisor: workOrder.chiefId,
