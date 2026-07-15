@@ -157,16 +157,28 @@ export class SupabaseOperationsRepository implements OperationsRepository {
   getWorkOrders() { return this.workOrders; }
 
   createWorkOrder(input: NewWorkOrder) {
-    const project = this.projects.get(input.projectCode);
-    if (!project) throw new Error(`Proje Supabase repository i\u00e7inde bulunamad\u0131: ${input.projectCode}`);
     if (!this.companyId || !this.userId) throw new Error("Operations repository hen\u00fcz hydrate edilmedi.");
-    if (this.workOrders.some(candidate => candidate.projectCode === input.projectCode && candidate.status !== "cancelled")) {
-      throw new Error("Bu proje i\u00e7in aktif bir \u0130\u015f Emri zaten var.");
+    if (this.workOrders.some(candidate => candidate.projectCode === input.projectCode)) {
+      throw new Error("Bu Proje No i\u00e7in bir \u0130\u015f Emri zaten var.");
     }
     const unavailablePersonnel = input.personnelIds.find(code => !this.personnel.some(record => record.personnelCode === code && record.status === "active"));
     if (unavailablePersonnel) throw new Error(`\u0130\u015f Emri aktif olmayan personel i\u00e7eriyor: ${unavailablePersonnel}`);
 
     const assignedAt = new Date().toISOString();
+    const existingProject = this.projects.get(input.projectCode);
+    const project: ProjectRow = existingProject ?? {
+      id: `project-${crypto.randomUUID()}`,
+      company_id: this.companyId,
+      project_number: input.projectCode,
+      customer: input.customerName,
+      title: `${input.projectCode} Saha Operasyonu`,
+      description: "",
+      address: "",
+      city: "İzmir",
+      district: "Belirlenmedi",
+      latitude: 38.4237,
+      longitude: 27.1428,
+    };
     const workOrder: WorkOrder = {
       ...input,
       id: `work-order-${crypto.randomUUID()}`,
@@ -180,14 +192,29 @@ export class SupabaseOperationsRepository implements OperationsRepository {
     this.workOrders = [...this.workOrders, workOrder];
     this.emit();
 
-    void this.client.from("work_orders").insert({
+    void this.persistWorkOrder(project, workOrder, !existingProject);
+    return workOrder;
+  }
+
+  private async persistWorkOrder(project: ProjectRow, workOrder: WorkOrder, createProject: boolean) {
+    if (createProject) {
+      const { error: projectError } = await this.client.from("projects").insert({ ...project, status: "PLANNING", created_by: this.userId });
+      if (projectError) {
+        this.workOrders = this.workOrders.filter(candidate => candidate.id !== workOrder.id);
+        this.emit();
+        console.error("Supabase project insert failed", projectError.message);
+        return;
+      }
+      this.projects.set(workOrder.projectCode, project);
+    }
+    const { error } = await this.client.from("work_orders").insert({
       id: workOrder.id,
       company_id: this.companyId,
       code: workOrder.code,
       project_id: project.id,
-      project_code: input.projectCode,
+      project_code: workOrder.projectCode,
       project_number: project.project_number,
-      customer: input.customerName,
+      customer: workOrder.customerName,
       title: project.title,
       description: project.description,
       address: project.address,
@@ -195,25 +222,24 @@ export class SupabaseOperationsRepository implements OperationsRepository {
       district: project.district,
       latitude: project.latitude,
       longitude: project.longitude,
-      assigned_chief_id: input.chiefId,
-      assigned_personnel_ids: input.personnelIds,
+      assigned_chief_id: workOrder.chiefId,
+      assigned_personnel_ids: workOrder.personnelIds,
       operation_type: workOrder.operationType,
       workflow_id: workOrder.workflowId,
-      target_codes: input.targetCodes,
-      priority: input.priority,
+      target_codes: workOrder.targetCodes,
+      priority: workOrder.priority,
       status: workOrder.status,
       attachment_ids: [],
-      planned_start_at: input.plannedStartAt,
-      estimated_end_at: input.estimatedEndAt,
+      planned_start_at: workOrder.plannedStartAt,
+      estimated_end_at: workOrder.estimatedEndAt,
       created_by: this.userId,
-      created_at: assignedAt,
-    }).then(({ error }) => {
-      if (!error) return;
+      created_at: workOrder.assignedAt,
+    });
+    if (error) {
       this.workOrders = this.workOrders.filter(candidate => candidate.id !== workOrder.id);
       this.emit();
       console.error("Supabase WorkOrder insert failed", error.message);
-    });
-    return workOrder;
+    }
   }
 
   getPersonnel() { return this.personnel; }

@@ -7,7 +7,7 @@
     "build": "next build",
     "typecheck": "tsc --noEmit",
     "test:operations": "node --experimental-transform-types --test modules/operations/engine/operation-engine.test.ts",
-    "test:workforce": "node --experimental-transform-types --test modules/workforce/services/temporary-password.test.ts modules/operations/services/personnel-qr-assignment.test.ts",
+    "test:workforce": "node --experimental-transform-types --test modules/workforce/services/temporary-password.test.ts modules/operations/services/personnel-qr-assignment.test.ts modules/operations/services/work-order-number.test.ts",
     "start": "next start"
   },
   "dependencies": {

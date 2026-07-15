@@ -5,6 +5,7 @@ import { isSupabaseConfigured, supabase } from "@/core/supabase/client";
 import { OPERATION_PERSONNEL, OPERATION_PROJECTS, OPERATION_WORK_ORDERS } from "../operations.data";
 import type { NewPersonnelRecord, PersonnelRecord, PersonnelRecordUpdate } from "../domain/personnel-record";
 import type { NewWorkOrder } from "../domain/work-order";
+import type { OperationProject } from "../domain/operation-project";
 import { projectOperationsReadModel } from "../read-model/operations-projector";
 import type { OperationsReadModel } from "../read-model/operations-read-model";
 import { MemoryOperationsRepository } from "../repositories/memory-operations.repository";
@@ -29,6 +30,37 @@ type OperationsContextValue = {
 
 const OperationsContext = createContext<OperationsContextValue | null>(null);
 
+function projectCatalog(workOrders: readonly NewWorkOrder[]) {
+  const knownCodes = new Set(OPERATION_PROJECTS.map(project => project.code));
+  const generated: OperationProject[] = workOrders
+    .filter(workOrder => !knownCodes.has(workOrder.projectCode))
+    .map(workOrder => ({
+      id: `project-${workOrder.projectCode.toLowerCase()}`,
+      code: workOrder.projectCode,
+      name: `${workOrder.projectCode} Saha Operasyonu`,
+      city: "İzmir",
+      district: "Belirlenmedi",
+      island: workOrder.targetCodes[0]?.replace("TGT-", "") ?? "-",
+      status: "Planlama",
+      progress: 0,
+      supervisor: workOrder.chiefId,
+      streets: 0,
+      distributionBoxes: 0,
+      buildings: 0,
+      startDate: new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(workOrder.plannedStartAt)),
+      estimatedEndDate: new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(workOrder.estimatedEndAt)),
+      coordinates: { lat: 38.4237, lng: 27.1428 },
+      activePersonnelCount: 0,
+      completedTargetCount: 0,
+      workflowState: "İş Emri",
+      latestOperation: "İş emri oluşturuldu",
+      supportCount: 0,
+      photoCount: 0,
+      markerStatus: "idle",
+    }));
+  return [...OPERATION_PROJECTS, ...generated];
+}
+
 export function OperationsProvider({ children }: { children: ReactNode }) {
   const repository: OperationsRepository = useMemo(() => {
     if (process.env.NODE_ENV === "development") return new MemoryOperationsRepository(OPERATION_WORK_ORDERS, OPERATION_PERSONNEL);
@@ -46,7 +78,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
   const value = useMemo<OperationsContextValue>(() => ({
     events,
     hydrated,
-    readModel: projectOperationsReadModel(OPERATION_PROJECTS, repository.getWorkOrders(), events, repository.getPersonnel()),
+    readModel: projectOperationsReadModel(projectCatalog(repository.getWorkOrders()), repository.getWorkOrders(), events, repository.getPersonnel()),
     repository,
     dispatch: event => repository.append(createOperationEvent(event)),
     dispatchMany: nextEvents => repository.appendMany(nextEvents.map(event => createOperationEvent(event))),
