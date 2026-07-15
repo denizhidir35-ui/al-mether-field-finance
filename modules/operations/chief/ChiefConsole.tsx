@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClipboardList, LogOut, UsersRound } from "lucide-react";
+import { IntroVideo } from "@/components/layout/IntroVideo";
 import type { ChiefAccount } from "../domain/chief-account";
 import type { OperationProject } from "../domain/operation-project";
 import type { PersonnelRecord } from "../domain/personnel-record";
@@ -104,8 +105,23 @@ function AuthenticatedChiefConsole({ chief, workOrders, projects, personnelRecor
 export function ChiefConsole({ onExit }: { onExit?: () => void }) {
   const auth = useChiefAuth();
   const { hydrated, readModel } = useOperationsContext();
+  const [showIntro, setShowIntro] = useState(false);
+  const introChiefId = useRef<string | null>(null);
+  const finishIntro = useCallback(() => setShowIntro(false), []);
   useEffect(() => { document.body.dataset.chiefConsoleOpen = "true"; return () => { delete document.body.dataset.chiefConsoleOpen; }; }, []);
+  useEffect(() => {
+    if (!auth.chief) {
+      introChiefId.current = null;
+      setShowIntro(false);
+      return;
+    }
+    if (introChiefId.current !== auth.chief.id) {
+      introChiefId.current = auth.chief.id;
+      setShowIntro(true);
+    }
+  }, [auth.chief]);
   if (!auth.chief) return <div className="fixed inset-0 z-[80] overflow-hidden bg-[#030816] py-3 sm:py-5"><ChiefLogin error={auth.error} onLogin={auth.login} onDevelopmentLogin={auth.loginDevelopment} onExit={onExit ? () => { void auth.logout().finally(onExit); } : undefined} /></div>;
+  if (showIntro) return <IntroVideo onFinish={finishIntro} />;
   if (!hydrated) return <div className="fixed inset-0 z-[80] grid place-items-center bg-[#030816] p-5"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-300">Operasyon yükleniyor</div></div>;
   const assignedWorkOrders = readModel.workOrders.filter(candidate => candidate.chiefId === auth.chief!.id && (candidate.status === "assigned" || candidate.status === "active"));
   if (assignedWorkOrders.length === 0) return <div className="fixed inset-0 z-[80] grid place-items-center bg-[#030816] p-5"><div className="max-w-sm rounded-[28px] border border-blue-300/15 bg-blue-400/[0.04] p-6 text-center"><h2 className="text-lg font-black text-white">Atanmış İş Emri Yok</h2><p className="mt-2 text-[11px] leading-5 text-slate-500">CEO tarafından atanan İş Emirleri burada görünecek.</p><button type="button" onClick={auth.logout} className="mt-5 h-11 rounded-xl bg-blue-600 px-5 text-[10px] font-black text-white">Girişe Dön</button></div></div>;
