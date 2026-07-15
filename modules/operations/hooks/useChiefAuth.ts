@@ -20,5 +20,13 @@ export function useChiefAuth() {
     return true;
   }
 
-  return { chief, error, login, logout: () => setChief(null) };
+  function loginDevelopment() {
+    const developmentChief = repository.getDevelopmentAccount();
+    if (!developmentChief) return false;
+    setError(null);
+    setChief(developmentChief);
+    return true;
+  }
+
+  return { chief, error, login, loginDevelopment, logout: () => setChief(null) };
 }

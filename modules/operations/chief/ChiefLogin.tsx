@@ -3,8 +3,8 @@
 import { useState, type FormEvent } from "react";
 import { Fingerprint, ShieldCheck } from "lucide-react";
 
-export function ChiefLogin({ error, onLogin, onExit }: { error: string | null; onLogin: (personnelNumber: string, password: string) => Promise<boolean>; onExit?: () => void }) {
-  const [personnelNumber, setPersonnelNumber] = useState("MTHR001");
+export function ChiefLogin({ error, onLogin, onDevelopmentLogin, onExit }: { error: string | null; onLogin: (personnelNumber: string, password: string) => Promise<boolean>; onDevelopmentLogin: () => boolean; onExit?: () => void }) {
+  const [personnelNumber, setPersonnelNumber] = useState("SMTHR000001");
   const [password, setPassword] = useState("1234");
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +30,8 @@ export function ChiefLogin({ error, onLogin, onExit }: { error: string | null; o
         <label className="mt-3 block text-[8px] font-bold uppercase tracking-[0.14em] text-slate-500">Şifre<input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" className="mt-2 h-12 w-full rounded-2xl border border-white/[0.07] bg-black/20 px-4 text-sm font-bold text-white outline-none transition focus:border-blue-400/35" /></label>
         {error ? <div className="mt-3 rounded-xl border border-rose-400/15 bg-rose-500/[0.07] px-3 py-2 text-[9px] font-bold text-rose-300">{error}</div> : null}
         <button disabled={loading} className="mt-5 flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 text-[11px] font-black text-white shadow-[0_14px_35px_rgba(37,99,235,.28)] disabled:opacity-50"><ShieldCheck size={16} />{loading ? "Doğrulanıyor" : "Operasyona Gir"}</button>
-        <div className="mt-3 text-center text-[8px] text-slate-600">Chief Operations Auth · MTHR001</div>
+        {process.env.NODE_ENV === "development" ? <button type="button" onClick={onDevelopmentLogin} className="mt-2 h-11 w-full rounded-2xl border border-amber-300/15 bg-amber-400/[0.04] text-[9px] font-black text-amber-200/75">Geliştirme Modu · Şifre Olmadan Gir</button> : null}
+        <div className="mt-3 text-center text-[8px] text-slate-600">Chief Operations Auth · SMTHR000001</div>
       </form>
     </div>
   );

@@ -9,7 +9,7 @@ type BarcodeDetectorInstance = { detect(source: ImageBitmapSource): Promise<read
 type BarcodeDetectorConstructor = new (options: { formats: readonly string[] }) => BarcodeDetectorInstance;
 
 export function parsePersonnelQr(rawValue: string): FieldPersonnelCode {
-  const code = rawValue.trim().split(":").at(-1)?.toUpperCase() ?? "";
+  const code = rawValue.trim().toUpperCase().split(":").find(part => OPERATION_CODE_PATTERNS.fieldPersonnel.test(part)) ?? "";
   if (!OPERATION_CODE_PATTERNS.fieldPersonnel.test(code)) throw new Error("Geçersiz AL METHER personel QR kodu.");
   return code as FieldPersonnelCode;
 }

@@ -5,6 +5,7 @@ import { useState } from "react";
 type LoginScreenProps = {
   onAuthenticate: (email: string, password: string) => Promise<void>;
   onOpenChief?: () => void;
+  onDevelopmentLogin?: (code: "CMTHR01" | "CMTHR02") => void;
 };
 
 function loginErrorMessage(error: unknown) {
@@ -18,7 +19,7 @@ function loginErrorMessage(error: unknown) {
   return "Giriş yapılamadı.";
 }
 
-export function LoginScreen({ onAuthenticate, onOpenChief }: LoginScreenProps) {
+export function LoginScreen({ onAuthenticate, onOpenChief, onDevelopmentLogin }: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -65,6 +66,7 @@ export function LoginScreen({ onAuthenticate, onOpenChief }: LoginScreenProps) {
           <button type="button" disabled={submitting} onClick={login} className="h-11 w-full rounded-xl bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-500 disabled:cursor-wait disabled:opacity-60">{submitting ? "Giriş yapılıyor..." : "Giriş Yap"}</button>
         </div>
         <div className="mt-4 text-[10px] text-slate-700">CEO: Supabase Auth · Şef: Operations Auth</div>
+        {process.env.NODE_ENV === "development" && onDevelopmentLogin ? <div className="mt-4 border-t border-white/[0.06] pt-4"><div className="text-[8px] font-black uppercase tracking-[0.14em] text-amber-300/60">Yalnızca geliştirme</div><div className="mt-2 grid grid-cols-2 gap-2"><button type="button" onClick={() => onDevelopmentLogin("CMTHR01")} className="h-10 rounded-xl border border-white/[0.07] text-[9px] font-bold text-slate-300">CMTHR01 · Deniz</button><button type="button" onClick={() => onDevelopmentLogin("CMTHR02")} className="h-10 rounded-xl border border-white/[0.07] text-[9px] font-bold text-slate-300">CMTHR02 · Aytaç</button></div></div> : null}
       </section>
     </main>
   );

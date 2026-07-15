@@ -63,6 +63,6 @@ export function buildChiefExperienceViewModel(chief: ChiefAccount, project: Oper
       { id: "problem", title: "Problem", tone: workflow.criticalProblemCount > 0 ? "critical" : "active", metrics: [`${workflow.criticalProblemCount} kritik`, `${workflow.supportCount} açık`, "Yeni problem"] },
       { id: "delivery", title: "Teslim", tone: workflow.workOrderStatus === "completed" ? "complete" : workflow.currentStep === "delivery" ? "active" : "passive", metrics: [`${workflow.completedTargetCount} target`, workflow.currentStep === "delivery" ? "Hazır" : "Akış bekliyor", workflow.workOrderStatus === "completed" ? "Tamamlandı" : "Engine kayıt"] }
     ],
-    motivation: { leaderCode: "MTHR002", leaderProgress: 81, chiefCode: chief.personnelCode, chiefProgress: project.progress }
+    motivation: { leaderCode: "SMTHR000002", leaderProgress: 81, chiefCode: chief.personnelCode, chiefProgress: project.progress }
   };
 }

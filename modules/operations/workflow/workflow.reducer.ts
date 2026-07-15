@@ -3,8 +3,8 @@ import type { OperationEvent } from "./workflow.events";
 import type { WorkflowState, WorkflowStepId } from "./workflow.types";
 
 export const INITIAL_WORKFLOW_STATE: WorkflowState = {
-  currentStep: "project",
-  currentPhase: "DEKA",
+  currentStep: "personnel",
+  currentPhase: "Personel",
   completedSteps: [],
   activePersonnelCount: 0,
   activePersonnelCodes: [],

@@ -12,7 +12,7 @@ import { useOperationsContext } from "./OperationsProvider";
 
 export function useOperationWorkflow(project: OperationProject, chief: ChiefAccount) {
   const { readModel, dispatch, dispatchMany } = useOperationsContext();
-  const workOrder = readModel.workOrders.find(candidate => candidate.projectCode === project.code && candidate.chiefId === chief.id);
+  const workOrder = readModel.workOrders.find(candidate => candidate.projectCode === project.code && candidate.chiefId === chief.id && (candidate.status === "assigned" || candidate.status === "active"));
   if (!workOrder) throw new Error(`Chief operation blocked: no assigned WorkOrder for ${chief.id} / ${project.code}`);
   const assignedWorkOrder = workOrder;
 

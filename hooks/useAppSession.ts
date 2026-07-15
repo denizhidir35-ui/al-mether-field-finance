@@ -32,10 +32,18 @@ export function useAppSession() {
     setUser(authenticatedUser);
   }, []);
 
+  const startDevelopmentSession = useCallback((code: "CMTHR01" | "CMTHR02") => {
+    if (process.env.NODE_ENV !== "development") throw new Error("Geliştirme oturumu üretimde kullanılamaz.");
+    const account = code === "CMTHR01"
+      ? { id: code, name: "Deniz Hıdır", email: "denizhidir@almether.com" }
+      : { id: code, name: "Aytaç Türkbay", email: "aytacturkbay@almether.com" };
+    setUser({ ...account, platformUserCode: code, companyId: "al_mether", role: "CEO", title: "CEO Developer" });
+  }, []);
+
   const endSession = useCallback(async () => {
     await signOut();
     setUser(null);
   }, []);
 
-  return { user, initialized, startSession, endSession };
+  return { user, initialized, startSession, startDevelopmentSession, endSession };
 }

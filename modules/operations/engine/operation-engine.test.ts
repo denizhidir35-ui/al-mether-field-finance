@@ -11,7 +11,7 @@ const setupRepository = () => {
   const repository = new MemoryOperationsRepository();
   const first = repository.createPersonnel({ displayName: "Saha Personeli 1", title: "Teknisyen" });
   const second = repository.createPersonnel({ displayName: "Saha Personeli 2", title: "Teknisyen" });
-  const workOrder = repository.createWorkOrder({ customerName: "AL METHER Fiber", projectCode: "ALM-0001", chiefId: "chief-mthr001", personnelIds: [first.personnelCode, second.personnelCode], plannedStartAt: occurredAt, estimatedEndAt: "2026-08-15T15:00:00.000Z", priority: "high", targetCodes: ["TGT-0001"] });
+  const workOrder = repository.createWorkOrder({ customerName: "AL METHER Fiber", projectCode: "ALM-0001", chiefId: "SMTHR000001", personnelIds: [first.personnelCode, second.personnelCode], plannedStartAt: occurredAt, estimatedEndAt: "2026-08-15T15:00:00.000Z", priority: "high", targetCodes: ["TGT-0001"] });
   return { repository, first, second, workOrder };
 };
 
@@ -43,17 +43,17 @@ const fieldStream: readonly OperationEvent[] = [
 
 test("CEO creates the real WorkOrder root with permanent personnel identities", () => {
   assert.equal(fixture.workOrder.code, "ALM-000001");
-  assert.deepEqual(fixture.workOrder.personnelIds, ["PRS000001", "PRS000002"]);
-  assert.equal(fixture.first.qrValue, "ALMETHER:PERSONNEL:PRS000001");
+  assert.deepEqual(fixture.workOrder.personnelIds, ["PMTHR000001", "PMTHR000002"]);
+  assert.equal(fixture.first.qrValue, "ALMETHER:PERSONNEL:PMTHR000001:V1");
   assert.equal(fixture.repository.getWorkOrders().length, 1);
 });
 
 test("canonical QR compatibility projects check-in and check-out without new event names", () => {
   const checkedIn = reduceWorkflowEvents(fieldStream.slice(0, 7));
-  assert.deepEqual(checkedIn.activePersonnelCodes, ["PRS000001", "PRS000002"]);
+  assert.deepEqual(checkedIn.activePersonnelCodes, ["PMTHR000001", "PMTHR000002"]);
   assert.equal(checkedIn.activePersonnelCount, 2);
   const checkedOut = reduceWorkflowEvents([...fieldStream.slice(0, 7), event("PERSONNEL_QR_START", 20), event("PERSONNEL_QR_FINISH", 21, { payload: { personnelCode: fixture.first.personnelCode, attendanceAction: "check_out" }, context: { module: "personnel", action: "personnel_check_out" } })]);
-  assert.deepEqual(checkedOut.activePersonnelCodes, ["PRS000002"]);
+  assert.deepEqual(checkedOut.activePersonnelCodes, ["PMTHR000002"]);
   assert.equal(checkedOut.activePersonnelCount, 1);
 });
 
@@ -77,4 +77,29 @@ test("repository rejects unknown WorkOrders and deduplicates event retries", () 
   repository.append({ ...message, id: "event-30-retry" });
   assert.equal(repository.getEvents().length, 1);
   assert.throws(() => repository.append({ ...message, id: "event-unknown", deduplicationKey: "unknown", workOrderId: "work-order-unknown" }), /unknown WorkOrder/);
+});
+
+test("HR lifecycle preserves immutable platform identity and never deletes personnel", () => {
+  const repository = new MemoryOperationsRepository();
+  const personnel = repository.createPersonnel({ displayName: "İlk Ad", title: "Teknisyen" });
+  const updated = repository.updatePersonnel(personnel.id, { displayName: "Yeni Ad" });
+  const passive = repository.setPersonnelStatus(personnel.id, "passive");
+  assert.throws(() => repository.createWorkOrder({
+    customerName: "AL METHER Fiber",
+    projectCode: "ALM-0001",
+    chiefId: "SMTHR000001",
+    personnelIds: [personnel.personnelCode],
+    plannedStartAt: occurredAt,
+    estimatedEndAt: "2026-08-15T15:00:00.000Z",
+    priority: "normal",
+    targetCodes: ["TGT-0001"]
+  }), /aktif olmayan personel/);
+  const renewed = repository.regeneratePersonnelQr(personnel.id);
+  const archived = repository.setPersonnelStatus(personnel.id, "archived");
+  assert.equal(updated.personnelCode, personnel.personnelCode);
+  assert.equal(passive.personnelCode, personnel.personnelCode);
+  assert.equal(renewed.personnelCode, personnel.personnelCode);
+  assert.equal(renewed.qrVersion, 2);
+  assert.equal(archived.status, "archived");
+  assert.equal(repository.getPersonnel().length, 1);
 });

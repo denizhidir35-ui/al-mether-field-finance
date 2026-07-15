@@ -7,4 +7,5 @@ export type AppUser = {
   email: string;
   role: AppRole;
   title: string;
+  platformUserCode?: string;
 };

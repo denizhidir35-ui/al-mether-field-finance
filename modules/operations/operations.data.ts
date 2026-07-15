@@ -1,6 +1,16 @@
 import type { WorkOrder } from "./domain/work-order";
 import type { PersonnelRecord } from "./domain/personnel-record";
 import type { OperationProject } from "./types";
+import type { ChiefAccount } from "./domain/chief-account";
+
+export const OPERATION_CHIEFS: readonly ChiefAccount[] = [{
+  id: "SMTHR000001",
+  personnelCode: "SMTHR000001",
+  displayName: "Ahmet Yılmaz",
+  role: "Chief",
+  status: "active",
+  assignedProjectCodes: ["ALM-0001", "ALM-0002", "ALM-0003"]
+}];
 
 export const OPERATION_PROJECTS: readonly OperationProject[] = [
   {

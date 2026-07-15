@@ -9,6 +9,11 @@ export async function createMailRepository(): Promise<MailRepository> {
     if (error) throw error;
     if (data.session) return new SupabaseMailRepository(supabase);
   }
+
+  if (process.env.NODE_ENV === "development") {
+    return new LocalMailRepository();
+  }
+
   if (isSupabaseConfigured) throw new Error("Mether Mail için geçerli Supabase oturumu bulunamadı.");
   return new LocalMailRepository();
 }
