@@ -9,6 +9,7 @@ export type WorkforceMember = {
   assignedChiefCode: string | null;
   qrValue: string | null;
   title: string | null;
+  temporaryPin?: string | null;
 };
 
 export type CreateChief = { role: "CHIEF"; displayName: string };

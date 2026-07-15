@@ -1,5 +1,5 @@
-import type { FieldPersonnelCode } from "../domain/identifiers";
-import { OPERATION_CODE_PATTERNS } from "../domain/identifiers";
+import type { FieldPersonnelCode } from "../domain/identifiers.ts";
+import { OPERATION_CODE_PATTERNS } from "../domain/identifiers.ts";
 
 export interface OperationQrService {
   scan(): Promise<string>;

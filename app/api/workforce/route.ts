@@ -20,8 +20,14 @@ async function listMembers(admin: Awaited<ReturnType<typeof requireWorkforceMana
   ]);
   if (chiefError) throw chiefError;
   if (personnelError) throw personnelError;
+  const chiefPins = new Map<string, string | null>();
+  await Promise.all((chiefs ?? []).map(async row => {
+    const { data } = await admin.auth.admin.getUserById(String(row.id));
+    const pin = data.user?.user_metadata?.temporary_pin;
+    chiefPins.set(String(row.id), typeof pin === "string" && /^\d{4}$/.test(pin) ? pin : null);
+  }));
   return [
-    ...(chiefs ?? []).map(row => ({ id: String(row.id), displayName: String(row.display_name), employeeCode: String(row.employee_code), role: "CHIEF", status: String(row.status), assignedChiefCode: null, qrValue: null, title: null })),
+    ...(chiefs ?? []).map(row => ({ id: String(row.id), displayName: String(row.display_name), employeeCode: String(row.employee_code), role: "CHIEF", status: String(row.status), assignedChiefCode: null, qrValue: null, title: null, temporaryPin: chiefPins.get(String(row.id)) ?? null })),
     ...(personnel ?? []).map(row => ({ id: String(row.id), displayName: String(row.display_name), employeeCode: String(row.personnel_code), role: "PERSONNEL", status: String(row.status), assignedChiefCode: row.assigned_chief_code ? String(row.assigned_chief_code) : null, qrValue: String(row.qr_value), title: String(row.title) })),
   ] as WorkforceMember[];
 }
@@ -46,7 +52,7 @@ export async function POST(request: NextRequest) {
       const employeeCode = String(codeData);
       const temporaryPassword = generateTemporaryPassword();
       const internalEmail = `${employeeCode.toLowerCase()}@almether.com`;
-      const { data: authData, error: authError } = await admin.auth.admin.createUser({ email: internalEmail, password: temporaryPassword, email_confirm: true, user_metadata: { display_name: displayName, employee_code: employeeCode } });
+      const { data: authData, error: authError } = await admin.auth.admin.createUser({ email: internalEmail, password: temporaryPassword, email_confirm: true, user_metadata: { display_name: displayName, employee_code: employeeCode, temporary_pin: temporaryPassword } });
       if (authError || !authData.user) throw authError ?? new Error("Şef Auth kaydı oluşturulamadı.");
       const { error: profileError } = await admin.from("profiles").insert({ id: authData.user.id, company_id: companyId, email: internalEmail, display_name: displayName, role: "CHIEF", employee_code: employeeCode, status: "ACTIVE", is_active: true });
       if (profileError) {
@@ -71,5 +77,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ member }, { status: 201 });
     }
     throw new Error("Yalnız Şef veya Personel oluşturulabilir.");
+  } catch (error) { return errorResponse(error); }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const { admin, companyId } = await requireWorkforceManager(request);
+    const body = await request.json() as Record<string, unknown>;
+    if (body.action === "RESET_CHIEF_PIN") {
+      const chiefCode = text(body.chiefCode, "Şef No").toUpperCase();
+      const { data: chief, error: chiefError } = await admin.from("profiles").select("id").eq("company_id", companyId).eq("employee_code", chiefCode).eq("role", "CHIEF").eq("status", "ACTIVE").maybeSingle();
+      if (chiefError) throw chiefError;
+      if (!chief) throw new Error("Aktif Şef bulunamadı.");
+      const temporaryPassword = generateTemporaryPassword();
+      const { data: authUser, error: authReadError } = await admin.auth.admin.getUserById(String(chief.id));
+      if (authReadError || !authUser.user) throw authReadError ?? new Error("Şef Auth kaydı bulunamadı.");
+      const { error: authError } = await admin.auth.admin.updateUserById(String(chief.id), { password: temporaryPassword, user_metadata: { ...authUser.user.user_metadata, temporary_pin: temporaryPassword } });
+      if (authError) throw authError;
+      const member = (await listMembers(admin, companyId)).find(item => item.employeeCode === chiefCode);
+      if (!member) throw new Error("Güncellenen Şef okunamadı.");
+      return NextResponse.json({ member, temporaryPassword });
+    }
+    const personnelCode = text(body.personnelCode, "Personel No").toUpperCase();
+    const assignedChiefCode = text(body.assignedChiefCode, "Şef").toUpperCase();
+    const { data: chief, error: chiefError } = await admin.from("profiles").select("id").eq("company_id", companyId).eq("employee_code", assignedChiefCode).eq("role", "CHIEF").eq("status", "ACTIVE").maybeSingle();
+    if (chiefError) throw chiefError;
+    if (!chief) throw new Error("Seçilen aktif Şef bulunamadı.");
+    const { data: updated, error: personnelError } = await admin.from("operation_personnel").update({ assigned_chief_code: assignedChiefCode, updated_at: new Date().toISOString() }).eq("company_id", companyId).eq("personnel_code", personnelCode).select("personnel_code").maybeSingle();
+    if (personnelError) throw personnelError;
+    if (!updated) throw new Error("Personel bulunamadı.");
+    const member = (await listMembers(admin, companyId)).find(item => item.employeeCode === personnelCode);
+    if (!member) throw new Error("Güncellenen personel okunamadı.");
+    return NextResponse.json({ member });
   } catch (error) { return errorResponse(error); }
 }

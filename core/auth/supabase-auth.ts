@@ -39,13 +39,16 @@ async function loadProfile(user: User): Promise<AppUser> {
 
   const profile = data as ProfileRow;
   const role = toAppRole(profile.role);
+  if (role === "CHIEF" || role === "PERSONNEL") {
+    throw new Error("Bu hesap Company Platform CEO oturumunda kullanılamaz. Şef girişini kullanın.");
+  }
   return {
     id: user.id,
     companyId: profile.company_id,
     name: profile.display_name,
     email: profile.email.toLowerCase(),
     role,
-    title: role === "CEO" ? "Co-Founder & CEO" : role === "PARTNER" ? "Co-Founder" : role === "MANAGER" ? "Operations Manager" : role === "CHIEF" ? "Field Chief" : role === "PERSONNEL" ? "Field Personnel" : "Executive Assistant",
+    title: role === "CEO" ? "Co-Founder & CEO" : role === "PARTNER" ? "Co-Founder" : role === "MANAGER" ? "Operations Manager" : "Executive Assistant",
   };
 }
 

@@ -22,3 +22,11 @@ export async function listWorkforce() {
 export async function createWorkforceMember(input: CreateWorkforceMember) {
   return request<WorkforceMutationResult>({ method: "POST", body: JSON.stringify(input) });
 }
+
+export async function updatePersonnelChief(personnelCode: string, assignedChiefCode: string) {
+  return request<{ member: WorkforceMember }>({ method: "PATCH", body: JSON.stringify({ personnelCode, assignedChiefCode }) });
+}
+
+export async function resetChiefPin(chiefCode: string) {
+  return request<WorkforceMutationResult>({ method: "PATCH", body: JSON.stringify({ action: "RESET_CHIEF_PIN", chiefCode }) });
+}
