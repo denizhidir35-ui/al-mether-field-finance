@@ -1,7 +1,23 @@
 -- AL METHER Sprint 10 - HR Foundation
 -- Extends the existing tenant/workforce model without changing Operations Engine data.
 
+begin;
+set local lock_timeout = '5s';
+set local statement_timeout = '120s';
+
 create extension if not exists pgcrypto;
+
+do $$ begin
+  create type hr_event_type as enum (
+    'EMPLOYEE_CREATED', 'EMPLOYEE_UPDATED', 'EMPLOYEE_ARCHIVED',
+    'ORGANIZATION_CREATED', 'ORGANIZATION_UPDATED', 'ORGANIZATION_ARCHIVED',
+    'DEPARTMENT_CREATED', 'DEPARTMENT_UPDATED', 'DEPARTMENT_ARCHIVED',
+    'TEAM_CREATED', 'TEAM_UPDATED', 'TEAM_ARCHIVED',
+    'DOCUMENT_CREATED', 'DOCUMENT_VERSIONED', 'DOCUMENT_SENT', 'DOCUMENT_ACKNOWLEDGED', 'DOCUMENT_ACCEPTED', 'DOCUMENT_OTP_CONFIRMED', 'DOCUMENT_E_SIGNATURE_REQUESTED',
+    'LEAVE_REQUEST_CREATED', 'LEAVE_APPROVED', 'LEAVE_REJECTED',
+    'PAYROLL_UPLOADED', 'ASSET_ASSIGNED', 'ASSET_RETURNED'
+  );
+exception when duplicate_object then null; end $$;
 
 alter table profiles drop constraint if exists profiles_role_check;
 alter table profiles add constraint profiles_role_check check (
@@ -10,12 +26,6 @@ alter table profiles add constraint profiles_role_check check (
 alter table profiles add column if not exists phone text;
 alter table profiles add column if not exists activation_status text not null default 'ACTIVE'
   check (activation_status in ('PENDING_PHONE', 'PENDING_PASSWORD', 'ACTIVE', 'BLOCKED'));
-
-create or replace function next_workforce_personnel_code() returns text language sql security definer set search_path = public as $$
-  select 'PMTHR' || lpad(nextval('operation_personnel_code_seq')::text, 6, '0');
-$$;
-revoke all on function next_workforce_personnel_code() from public, anon, authenticated;
-grant execute on function next_workforce_personnel_code() to service_role;
 
 create table if not exists hr_organizations (
   id uuid primary key default gen_random_uuid(),
@@ -250,20 +260,6 @@ create table if not exists hr_document_audit_events (
   foreign key (company_id, document_id) references hr_documents(company_id, id)
 );
 
-create or replace function reject_hr_audit_mutation() returns trigger language plpgsql as $$
-begin raise exception 'hr_document_audit_events is append-only'; end; $$;
-drop trigger if exists hr_document_audit_no_update on hr_document_audit_events;
-create trigger hr_document_audit_no_update before update on hr_document_audit_events for each row execute function reject_hr_audit_mutation();
-drop trigger if exists hr_document_audit_no_delete on hr_document_audit_events;
-create trigger hr_document_audit_no_delete before delete on hr_document_audit_events for each row execute function reject_hr_audit_mutation();
-
-create or replace function reject_hr_file_delete() returns trigger language plpgsql as $$
-begin raise exception 'HR files are archived, never physically deleted'; end; $$;
-drop trigger if exists hr_employee_files_no_delete on hr_employee_files;
-create trigger hr_employee_files_no_delete before delete on hr_employee_files for each row execute function reject_hr_file_delete();
-drop trigger if exists hr_document_versions_no_delete on hr_document_versions;
-create trigger hr_document_versions_no_delete before delete on hr_document_versions for each row execute function reject_hr_file_delete();
-
 create table if not exists hr_asset_assignments (
   id uuid primary key default gen_random_uuid(),
   company_id text not null references companies(id) on delete cascade,
@@ -280,18 +276,6 @@ create table if not exists hr_asset_assignments (
 );
 create unique index if not exists hr_asset_active_assignment_idx
   on hr_asset_assignments(company_id, source_module, asset_reference) where status = 'ACTIVE';
-
-do $$ begin
-  create type hr_event_type as enum (
-    'EMPLOYEE_CREATED', 'EMPLOYEE_UPDATED', 'EMPLOYEE_ARCHIVED',
-    'ORGANIZATION_CREATED', 'ORGANIZATION_UPDATED', 'ORGANIZATION_ARCHIVED',
-    'DEPARTMENT_CREATED', 'DEPARTMENT_UPDATED', 'DEPARTMENT_ARCHIVED',
-    'TEAM_CREATED', 'TEAM_UPDATED', 'TEAM_ARCHIVED',
-    'DOCUMENT_CREATED', 'DOCUMENT_VERSIONED', 'DOCUMENT_SENT', 'DOCUMENT_ACKNOWLEDGED', 'DOCUMENT_ACCEPTED', 'DOCUMENT_OTP_CONFIRMED', 'DOCUMENT_E_SIGNATURE_REQUESTED',
-    'LEAVE_REQUEST_CREATED', 'LEAVE_APPROVED', 'LEAVE_REJECTED',
-    'PAYROLL_UPLOADED', 'ASSET_ASSIGNED', 'ASSET_RETURNED'
-  );
-exception when duplicate_object then null; end $$;
 
 create table if not exists hr_events (
   id uuid primary key default gen_random_uuid(),
@@ -327,17 +311,6 @@ create table if not exists hr_read_models (
   updated_at timestamptz not null default now()
 );
 
-create or replace function reject_hr_event_mutation() returns trigger language plpgsql as $$
-begin raise exception 'hr_events is append-only'; end; $$;
-drop trigger if exists hr_events_no_update on hr_events;
-create trigger hr_events_no_update before update on hr_events for each row execute function reject_hr_event_mutation();
-drop trigger if exists hr_events_no_delete on hr_events;
-create trigger hr_events_no_delete before delete on hr_events for each row execute function reject_hr_event_mutation();
-drop trigger if exists hr_security_audit_no_update on hr_security_audit_logs;
-create trigger hr_security_audit_no_update before update on hr_security_audit_logs for each row execute function reject_hr_audit_mutation();
-drop trigger if exists hr_security_audit_no_delete on hr_security_audit_logs;
-create trigger hr_security_audit_no_delete before delete on hr_security_audit_logs for each row execute function reject_hr_audit_mutation();
-
 create table if not exists hr_leave_requests (
   id uuid primary key default gen_random_uuid(), company_id text not null references companies(id) on delete cascade,
   employee_code text not null, leave_type text not null, starts_on date not null, ends_on date not null,
@@ -355,8 +328,6 @@ create table if not exists hr_payroll_records (
   check (storage_path is null or storage_path like company_id || '/' || employee_code || '/PAYROLL/%'),
   check ((status <> 'ARCHIVED' and archived_at is null) or status = 'ARCHIVED')
 );
-drop trigger if exists hr_payroll_records_no_delete on hr_payroll_records;
-create trigger hr_payroll_records_no_delete before delete on hr_payroll_records for each row execute function reject_hr_file_delete();
 
 create table if not exists hr_notifications (
   id uuid primary key default gen_random_uuid(), company_id text not null references companies(id) on delete cascade,
@@ -364,42 +335,43 @@ create table if not exists hr_notifications (
   created_at timestamptz not null default now()
 );
 
--- Existing workforce identities become HR employee records without changing their source tables.
-insert into hr_employees (company_id, employee_code, profile_id, display_name, job_title, hr_role, activation_status, status)
-select company_id, employee_code, id, display_name, 'Saha Şefi', 'CHIEF', 'ACTIVE', status
-from profiles where role = 'CHIEF' and employee_code is not null
-on conflict (company_id, employee_code) do update set profile_id = excluded.profile_id, display_name = excluded.display_name, status = excluded.status;
+create index if not exists hr_employees_org_idx on hr_employees(company_id, organization_id, status);
+create index if not exists hr_employees_manager_idx on hr_employees(company_id, manager_employee_code, status);
+create index if not exists hr_document_recipients_employee_idx on hr_document_recipients(company_id, employee_code, status);
+create index if not exists hr_audit_document_idx on hr_document_audit_events(company_id, document_id, occurred_at desc);
 
-insert into hr_employees (company_id, employee_code, operation_personnel_id, display_name, job_title, hr_role, manager_employee_code, activation_status, status)
-select company_id, personnel_code, id, display_name, title, 'EMPLOYEE', assigned_chief_code, 'PENDING_PHONE', status
-from operation_personnel
-on conflict (company_id, employee_code) do update set operation_personnel_id = excluded.operation_personnel_id, display_name = excluded.display_name, job_title = excluded.job_title, manager_employee_code = excluded.manager_employee_code, status = excluded.status;
+create or replace function next_workforce_personnel_code() returns text language sql security definer set search_path = public as $$
+  select 'PMTHR' || lpad(nextval('operation_personnel_code_seq')::text, 6, '0');
+$$;
+revoke all on function next_workforce_personnel_code() from public, anon, authenticated;
+grant execute on function next_workforce_personnel_code() to service_role;
 
-insert into hr_employee_placements (company_id, employee_code, organization_id, department_id, team_id, manager_employee_code)
-select company_id, employee_code, organization_id, department_id, team_id, manager_employee_code
-from hr_employees where status = 'ACTIVE'
-on conflict (company_id, employee_code) where status = 'ACTIVE' do nothing;
+create or replace function reject_hr_audit_mutation() returns trigger language plpgsql as $$
+begin raise exception 'hr_document_audit_events is append-only'; end; $$;
+drop trigger if exists hr_document_audit_no_update on hr_document_audit_events;
+create trigger hr_document_audit_no_update before update on hr_document_audit_events for each row execute function reject_hr_audit_mutation();
+drop trigger if exists hr_document_audit_no_delete on hr_document_audit_events;
+create trigger hr_document_audit_no_delete before delete on hr_document_audit_events for each row execute function reject_hr_audit_mutation();
 
-insert into hr_company_licenses (company_id, module_code) select id, module_code from companies cross join (values ('dashboard'),('hr'),('documents'),('operations'),('fleet'),('inventory'),('reports'),('settings'),('finance')) modules(module_code) on conflict do nothing;
+create or replace function reject_hr_file_delete() returns trigger language plpgsql as $$
+begin raise exception 'HR files are archived, never physically deleted'; end; $$;
+drop trigger if exists hr_employee_files_no_delete on hr_employee_files;
+create trigger hr_employee_files_no_delete before delete on hr_employee_files for each row execute function reject_hr_file_delete();
+drop trigger if exists hr_document_versions_no_delete on hr_document_versions;
+create trigger hr_document_versions_no_delete before delete on hr_document_versions for each row execute function reject_hr_file_delete();
+drop trigger if exists hr_payroll_records_no_delete on hr_payroll_records;
+create trigger hr_payroll_records_no_delete before delete on hr_payroll_records for each row execute function reject_hr_file_delete();
 
-insert into hr_role_permissions (company_id, role, permission_code)
-select id, role_code, permission_code from companies cross join (values
-  ('PLATFORM_ADMIN','*'), ('CEO','*'), ('PARTNER','*'),
-  ('HR','hr.view'), ('HR','hr.manage'), ('HR','documents.view'),
-  ('MANAGER','hr.view_scoped'), ('MANAGER','documents.view'),
-  ('EMPLOYEE','employee.self'), ('EMPLOYEE','documents.self'),
-  ('CHIEF','operations.assigned')
-) permissions(role_code, permission_code) on conflict do nothing;
-
-insert into hr_access_grants (company_id, profile_id, access_role, scope_type)
-select company_id, id, 'HR_ADMIN', 'COMPANY' from profiles
-where role in ('CEO', 'PARTNER', 'HR', 'PLATFORM_ADMIN') and is_active
-on conflict do nothing;
-
-insert into hr_access_grants (company_id, profile_id, access_role, scope_type, employee_code)
-select company_id, profile_id, 'EMPLOYEE', 'SELF', employee_code from hr_employees
-where profile_id is not null
-on conflict do nothing;
+create or replace function reject_hr_event_mutation() returns trigger language plpgsql as $$
+begin raise exception 'hr_events is append-only'; end; $$;
+drop trigger if exists hr_events_no_update on hr_events;
+create trigger hr_events_no_update before update on hr_events for each row execute function reject_hr_event_mutation();
+drop trigger if exists hr_events_no_delete on hr_events;
+create trigger hr_events_no_delete before delete on hr_events for each row execute function reject_hr_event_mutation();
+drop trigger if exists hr_security_audit_no_update on hr_security_audit_logs;
+create trigger hr_security_audit_no_update before update on hr_security_audit_logs for each row execute function reject_hr_audit_mutation();
+drop trigger if exists hr_security_audit_no_delete on hr_security_audit_logs;
+create trigger hr_security_audit_no_delete before delete on hr_security_audit_logs for each row execute function reject_hr_audit_mutation();
 
 create or replace function can_manage_hr() returns boolean language sql stable security definer set search_path = public as $$
   select exists (
@@ -617,8 +589,6 @@ create policy "hr insert read model" on hr_read_models for insert to authenticat
 drop policy if exists "hr update read model" on hr_read_models;
 create policy "hr update read model" on hr_read_models for update to authenticated using (company_id = current_company_id() and can_manage_hr()) with check (company_id = current_company_id() and can_manage_hr());
 
-insert into storage.buckets (id, name, public) values ('hr-private', 'hr-private', false)
-on conflict (id) do update set public = false;
 drop policy if exists "hr private document read" on storage.objects;
 create policy "hr private document read" on storage.objects for select to authenticated using (
   bucket_id = 'hr-private' and (storage.foldername(name))[1] = current_company_id()
@@ -644,7 +614,86 @@ create policy "hr private document upload" on storage.objects for insert to auth
   )
 );
 
-create index if not exists hr_employees_org_idx on hr_employees(company_id, organization_id, status);
-create index if not exists hr_employees_manager_idx on hr_employees(company_id, manager_employee_code, status);
-create index if not exists hr_document_recipients_employee_idx on hr_document_recipients(company_id, employee_code, status);
-create index if not exists hr_audit_document_idx on hr_document_audit_events(company_id, document_id, occurred_at desc);
+-- Seed the private bucket only after all Storage policy DDL is complete.
+insert into storage.buckets (id, name, public) values ('hr-private', 'hr-private', false)
+on conflict (id) do update set public = false;
+
+-- Existing workforce identities become HR employee records without changing their source tables.
+insert into hr_employees (company_id, employee_code, profile_id, display_name, job_title, hr_role, activation_status, status)
+select company_id, employee_code, id, display_name, 'Saha Şefi', 'CHIEF', 'ACTIVE', status
+from profiles where role = 'CHIEF' and employee_code is not null
+on conflict (company_id, employee_code) do update set profile_id = excluded.profile_id, display_name = excluded.display_name, status = excluded.status;
+
+insert into hr_employees (company_id, employee_code, operation_personnel_id, display_name, job_title, hr_role, manager_employee_code, activation_status, status)
+select personnel.company_id, personnel.personnel_code, personnel.id, personnel.display_name, personnel.title, 'EMPLOYEE',
+  case when chief.employee_code is not null then personnel.assigned_chief_code else null end,
+  'PENDING_PHONE', personnel.status
+from operation_personnel personnel
+left join profiles chief
+  on chief.company_id = personnel.company_id
+  and chief.employee_code = personnel.assigned_chief_code
+  and chief.role = 'CHIEF'
+  and chief.is_active
+  and chief.status = 'ACTIVE'
+on conflict (company_id, employee_code) do update set operation_personnel_id = excluded.operation_personnel_id, display_name = excluded.display_name, job_title = excluded.job_title, manager_employee_code = excluded.manager_employee_code, status = excluded.status;
+
+insert into hr_employee_placements (company_id, employee_code, organization_id, department_id, team_id, manager_employee_code)
+select company_id, employee_code, organization_id, department_id, team_id, manager_employee_code
+from hr_employees where status = 'ACTIVE'
+on conflict (company_id, employee_code) where status = 'ACTIVE' do nothing;
+
+insert into hr_company_licenses (company_id, module_code)
+select id, module_code
+from companies
+cross join (values ('dashboard'),('hr'),('documents'),('operations'),('fleet'),('inventory'),('reports'),('settings'),('finance')) modules(module_code)
+on conflict do nothing;
+
+insert into hr_role_permissions (company_id, role, permission_code)
+select id, role_code, permission_code from companies cross join (values
+  ('PLATFORM_ADMIN','*'), ('CEO','*'), ('PARTNER','*'),
+  ('HR','hr.view'), ('HR','hr.manage'), ('HR','documents.view'),
+  ('MANAGER','hr.view_scoped'), ('MANAGER','documents.view'),
+  ('EMPLOYEE','employee.self'), ('EMPLOYEE','documents.self'),
+  ('CHIEF','operations.assigned')
+) permissions(role_code, permission_code) on conflict do nothing;
+
+insert into hr_access_grants (company_id, profile_id, access_role, scope_type)
+select company_id, id, 'HR_ADMIN', 'COMPANY' from profiles
+where role in ('CEO', 'PARTNER', 'HR', 'PLATFORM_ADMIN') and is_active
+on conflict do nothing;
+
+insert into hr_access_grants (company_id, profile_id, access_role, scope_type, employee_code)
+select company_id, profile_id, 'EMPLOYEE', 'SELF', employee_code from hr_employees
+where profile_id is not null
+on conflict do nothing;
+
+-- Fail before COMMIT if any deferred manager relation or placement is inconsistent.
+do $$
+begin
+  if exists (
+    select 1
+    from hr_employees employee
+    left join hr_employees manager
+      on manager.company_id = employee.company_id
+      and manager.employee_code = employee.manager_employee_code
+    where employee.manager_employee_code is not null
+      and manager.id is null
+  ) then
+    raise exception 'HR migration integrity check failed: orphan employee manager reference';
+  end if;
+
+  if exists (
+    select 1
+    from hr_employee_placements placement
+    left join hr_employees employee
+      on employee.company_id = placement.company_id
+      and employee.employee_code = placement.employee_code
+    where employee.id is null
+  ) then
+    raise exception 'HR migration integrity check failed: orphan employee placement';
+  end if;
+end $$;
+
+set constraints all immediate;
+
+commit;

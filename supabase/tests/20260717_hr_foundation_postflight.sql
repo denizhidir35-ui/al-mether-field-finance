@@ -58,10 +58,47 @@ begin
   if (select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname in ('hr private document read','hr private document upload')) <> 2 then
     raise exception 'HR storage policies are incomplete';
   end if;
+
+  if exists (
+    select 1
+    from operation_personnel personnel
+    join profiles chief on chief.company_id = personnel.company_id
+      and chief.employee_code = personnel.assigned_chief_code
+      and chief.role = 'CHIEF' and chief.is_active and chief.status = 'ACTIVE'
+    join hr_employees employee on employee.company_id = personnel.company_id
+      and employee.operation_personnel_id = personnel.id
+    where employee.manager_employee_code is distinct from personnel.assigned_chief_code
+  ) then
+    raise exception 'A valid Chief reference was not linked during HR backfill';
+  end if;
+
+  if exists (
+    select 1
+    from operation_personnel personnel
+    join hr_employees employee on employee.company_id = personnel.company_id
+      and employee.operation_personnel_id = personnel.id
+    where personnel.assigned_chief_code is not null
+      and not exists (
+        select 1 from profiles chief where chief.company_id = personnel.company_id
+          and chief.employee_code = personnel.assigned_chief_code
+          and chief.role = 'CHIEF' and chief.is_active and chief.status = 'ACTIVE'
+      )
+      and employee.manager_employee_code is not null
+  ) then
+    raise exception 'An orphan Chief reference was not safely nulled in HR backfill';
+  end if;
 end $$;
 
 select
   true as hr_foundation_postflight_ok,
   (select public from storage.buckets where id = 'hr-private') as bucket_public,
   (select count(*) from pg_policies where schemaname = 'public' and tablename like 'hr\_%' escape '\') as hr_policy_count,
-  (select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname like 'hr private%') as storage_policy_count;
+  (select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname like 'hr private%') as storage_policy_count,
+  (select count(*) from operation_personnel personnel where personnel.assigned_chief_code is not null and not exists (
+    select 1 from profiles chief where chief.company_id = personnel.company_id
+      and chief.employee_code = personnel.assigned_chief_code
+      and chief.role = 'CHIEF' and chief.is_active and chief.status = 'ACTIVE'
+  )) as orphan_chief_reference_count,
+  (select count(*) from operation_personnel personnel join profiles chief
+    on chief.company_id = personnel.company_id and chief.employee_code = personnel.assigned_chief_code
+      and chief.role = 'CHIEF' and chief.is_active and chief.status = 'ACTIVE') as valid_chief_reference_count;

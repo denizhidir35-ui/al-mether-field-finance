@@ -2,9 +2,12 @@
 
 Migration: `supabase/migrations/20260717_hr_foundation.sql`
 
+The migration is explicitly atomic: `BEGIN`, short lock/statement timeouts, and `COMMIT` are part of the file. Any failed statement aborts the transaction; no partial HR schema is committed.
+
 ## Compatibility
 
 - Existing `profiles`, `operation_personnel`, WorkOrder, PMTHR QR and Operations Engine tables remain the source records for their current responsibilities.
+- An operation personnel row whose assigned Chief is absent/inactive in `profiles` is still migrated safely. Its HR `manager_employee_code` remains `NULL`; the original Operations assignment is not changed.
 - `hr_employees.employee_code` links the HR record to the existing workforce identity. `operation_personnel_id` and `profile_id` are unique optional references, preventing a second HR identity for the same person.
 - Portal authentication (`profile_id`) and operation identity (`employee_code`) remain separate.
 
