@@ -4,7 +4,8 @@ import type { ModuleId } from "@/core/navigation/navigation.types";
 import { DashboardModule } from "@/modules/dashboard/DashboardModule";
 import { FinanceModule } from "@/modules/finance/FinanceModule";
 import { OperationsModule } from "@/modules/operations/OperationsModule";
-import { WorkforceModule } from "@/modules/workforce/components/WorkforceModule";
+import { HrFoundationModule } from "@/modules/workforce/components/HrFoundationModule";
+import { EmployeePortal } from "@/modules/workforce/components/EmployeePortal";
 import { PlaceholderModule } from "@/modules/shared/PlaceholderModule";
 
 type ModuleRendererProps = { activeModule: ModuleId; user: AppUser; onNavigate: (module: ModuleId) => void };
@@ -19,9 +20,10 @@ const PLACEHOLDERS = {
 } satisfies Record<Exclude<ModuleId, "dashboard" | "finance" | "operations">, Parameters<typeof PlaceholderModule>[0]>;
 
 export function ModuleRenderer({ activeModule, user, onNavigate }: ModuleRendererProps) {
+  if ((user.role === "EMPLOYEE" || user.role === "PERSONNEL") && (activeModule === "dashboard" || activeModule === "hr")) return <EmployeePortal user={user}/>;
   if (activeModule === "dashboard") return <DashboardModule user={user} onNavigate={onNavigate} />;
   if (activeModule === "finance") return <FinanceModule user={user} />;
   if (activeModule === "operations") return <OperationsModule user={user} />;
-  if (activeModule === "hr") return <WorkforceModule />;
+  if (activeModule === "hr") return <HrFoundationModule user={user} />;
   return <PlaceholderModule {...PLACEHOLDERS[activeModule]} />;
 }

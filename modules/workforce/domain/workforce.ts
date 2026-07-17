@@ -13,6 +13,6 @@ export type WorkforceMember = {
 };
 
 export type CreateChief = { role: "CHIEF"; displayName: string };
-export type CreatePersonnel = { role: "PERSONNEL"; displayName: string; title: string; assignedChiefCode: string };
+export type CreatePersonnel = { role: "PERSONNEL"; displayName: string; title: string; assignedChiefCode: string; phone: string };
 export type CreateWorkforceMember = CreateChief | CreatePersonnel;
 export type WorkforceMutationResult = { member: WorkforceMember; temporaryPassword?: string };

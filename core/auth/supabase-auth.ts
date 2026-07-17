@@ -7,6 +7,7 @@ type ProfileRow = {
   email: string;
   display_name: string;
   role: string;
+  employee_code?: string | null;
 };
 
 function databaseErrorMessage(error: { message?: string; code?: string }) {
@@ -18,8 +19,8 @@ function databaseErrorMessage(error: { message?: string; code?: string }) {
 
 function toAppRole(role: string): AppRole {
   const normalized = role.trim().toUpperCase();
-  if (normalized === "CEO" || normalized === "PARTNER" || normalized === "ASSISTANT" || normalized === "MANAGER" || normalized === "CHIEF" || normalized === "PERSONNEL") {
-    return normalized;
+  if (["CEO", "PARTNER", "ASSISTANT", "MANAGER", "CHIEF", "PERSONNEL", "HR", "OFFICE", "EMPLOYEE", "PLATFORM_ADMIN"].includes(normalized)) {
+    return normalized as AppRole;
   }
   return "ASSISTANT";
 }
@@ -29,7 +30,7 @@ async function loadProfile(user: User): Promise<AppUser> {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("company_id,email,display_name,role")
+    .select("company_id,email,display_name,role,employee_code")
     .eq("id", user.id)
     .eq("is_active", true)
     .maybeSingle();
@@ -42,13 +43,20 @@ async function loadProfile(user: User): Promise<AppUser> {
   if (role === "CHIEF" || role === "PERSONNEL") {
     throw new Error("Bu hesap Company Platform CEO oturumunda kullanılamaz. Şef girişini kullanın.");
   }
+  const [{ data: licenses }, { data: permissions }] = await Promise.all([
+    supabase.from("hr_company_licenses").select("module_code").eq("company_id", profile.company_id).eq("is_active", true),
+    supabase.from("hr_role_permissions").select("permission_code").eq("company_id", profile.company_id).eq("role", role).eq("is_allowed", true),
+  ]);
   return {
     id: user.id,
     companyId: profile.company_id,
     name: profile.display_name,
     email: profile.email.toLowerCase(),
     role,
-    title: role === "CEO" ? "Co-Founder & CEO" : role === "PARTNER" ? "Co-Founder" : role === "MANAGER" ? "Operations Manager" : "Executive Assistant",
+    title: role === "CEO" ? "Co-Founder & CEO" : role === "PARTNER" ? "Co-Founder" : role === "HR" ? "Human Resources" : role === "MANAGER" ? "Manager" : role === "EMPLOYEE" ? "Employee" : role === "PLATFORM_ADMIN" ? "Platform Admin" : "Executive Assistant",
+    platformUserCode: profile.employee_code ?? undefined,
+    licensedModules: licenses?.map(item => String(item.module_code)),
+    permissions: permissions?.map(item => String(item.permission_code)),
   };
 }
 
@@ -74,6 +82,31 @@ export async function signIn(email: string, password: string): Promise<AppUser> 
     await supabase.auth.signOut();
     throw profileError;
   }
+}
+
+export async function signInEmployee(phone: string, password: string): Promise<AppUser> {
+  if (!supabase) throw new Error("Supabase bağlantısı yapılandırılmamış.");
+  const { data, error } = await supabase.auth.signInWithPassword({ phone: phone.trim(), password });
+  if (error) throw error;
+  return loadProfile(data.user);
+}
+
+export async function requestEmployeeActivation(phone: string) {
+  if (!supabase) throw new Error("Supabase bağlantısı yapılandırılmamış.");
+  const { error } = await supabase.auth.signInWithOtp({ phone: phone.trim(), options: { shouldCreateUser: false } });
+  if (error) throw error;
+}
+
+export async function completeEmployeeActivation(phone: string, token: string, password: string): Promise<AppUser> {
+  if (!supabase) throw new Error("Supabase bağlantısı yapılandırılmamış.");
+  const { data, error } = await supabase.auth.verifyOtp({ phone: phone.trim(), token: token.trim(), type: "sms" });
+  if (error || !data.user || !data.session) throw error ?? new Error("Telefon doğrulanamadı.");
+  const { error: passwordError } = await supabase.auth.updateUser({ password });
+  if (passwordError) throw passwordError;
+  const response = await fetch("/api/hr/activate", { method: "POST", headers: { authorization: `Bearer ${data.session.access_token}` } });
+  const result = await response.json() as { error?: string };
+  if (!response.ok) throw new Error(result.error || "Personel hesabı aktifleştirilemedi.");
+  return loadProfile(data.user);
 }
 
 export async function signOut() {

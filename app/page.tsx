@@ -11,7 +11,7 @@ import { ChiefConsole } from "@/modules/operations/chief/ChiefConsole";
 import { OperationsProvider } from "@/modules/operations/hooks/OperationsProvider";
 
 function HomePageContent() {
-  const { user, initialized, startSession, startDevelopmentSession, endSession } = useAppSession();
+  const { user, initialized, startSession, startEmployeeSession, requestEmployeeActivation, activateEmployee, startDevelopmentSession, endSession } = useAppSession();
   const [activeModule, setActiveModule] = useState<ModuleId>("dashboard");
   const [showIntro, setShowIntro] = useState(false);
   const [showChiefAccess, setShowChiefAccess] = useState(false);
@@ -23,7 +23,7 @@ function HomePageContent() {
   }
 
   if (!user) {
-    return <LoginScreen onOpenChief={() => setShowChiefAccess(true)} onDevelopmentLogin={code => { startDevelopmentSession(code); setShowIntro(false); }} onAuthenticate={async (email, password) => { await startSession(email, password); setShowIntro(true); }} />;
+    return <LoginScreen onOpenChief={() => setShowChiefAccess(true)} onEmployeeLogin={startEmployeeSession} onEmployeeActivationRequest={requestEmployeeActivation} onEmployeeActivate={activateEmployee} onDevelopmentLogin={code => { startDevelopmentSession(code); setShowIntro(false); }} onAuthenticate={async (email, password) => { await startSession(email, password); setShowIntro(true); }} />;
   }
 
   function logout() {

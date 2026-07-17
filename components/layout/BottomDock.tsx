@@ -2,20 +2,24 @@
 
 import { MODULE_REGISTRY } from "@/core/navigation/module-registry";
 import type { ModuleId } from "@/core/navigation/navigation.types";
+import type { AppUser } from "@/types/auth";
+import { modulesForUser } from "@/core/navigation/access-control";
 
 type BottomDockProps = {
+  user: AppUser;
   activeModule: ModuleId;
   onChange: (module: ModuleId) => void;
 };
 
 export function BottomDock({
+  user,
   activeModule,
   onChange
 }: BottomDockProps) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 hidden px-2 pb-[max(7px,env(safe-area-inset-bottom))] lg:block">
       <nav className="mether-dock mx-auto flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-[22px] border border-white/[0.09] bg-[#09101e]/94 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,.5)] backdrop-blur-2xl">
-        {MODULE_REGISTRY.map(item => {
+        {MODULE_REGISTRY.filter(item => modulesForUser(user).includes(item.id)).map(item => {
           const Icon = item.icon;
           const active = activeModule === item.id;
 

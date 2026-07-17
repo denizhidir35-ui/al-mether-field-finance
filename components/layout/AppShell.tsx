@@ -30,8 +30,8 @@ export function AppShell({
         <div className={`mx-auto w-full max-w-[1540px] ${activeModule === "finance" || activeModule === "operations" || activeModule === "hr" ? "module-viewport-content" : ""}`}>{children}</div>
       </main>
 
-      <div data-app-shell-chrome><BottomDock activeModule={activeModule} onChange={onChange} /></div>
-      <div data-app-shell-chrome><MobileNavigation activeModule={activeModule} onChange={onChange} /></div>
+      <div data-app-shell-chrome><BottomDock user={user} activeModule={activeModule} onChange={onChange} /></div>
+      <div data-app-shell-chrome><MobileNavigation user={user} activeModule={activeModule} onChange={onChange} /></div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getAuthenticatedAppUser, signIn, signOut } from "@/core/auth/supabase-auth";
+import { completeEmployeeActivation, getAuthenticatedAppUser, requestEmployeeActivation, signIn, signInEmployee, signOut } from "@/core/auth/supabase-auth";
 import { supabase } from "@/core/supabase/client";
 import type { AppUser } from "@/types/auth";
 
@@ -40,10 +40,20 @@ export function useAppSession() {
     setUser({ ...account, platformUserCode: code, companyId: "al_mether", role: "CEO", title: "CEO Developer" });
   }, []);
 
+  const startEmployeeSession = useCallback(async (phone: string, password: string) => {
+    const authenticatedUser = await signInEmployee(phone, password);
+    setUser(authenticatedUser);
+  }, []);
+
+  const activateEmployee = useCallback(async (phone: string, token: string, password: string) => {
+    const authenticatedUser = await completeEmployeeActivation(phone, token, password);
+    setUser(authenticatedUser);
+  }, []);
+
   const endSession = useCallback(async () => {
     await signOut();
     setUser(null);
   }, []);
 
-  return { user, initialized, startSession, startDevelopmentSession, endSession };
+  return { user, initialized, startSession, startEmployeeSession, requestEmployeeActivation, activateEmployee, startDevelopmentSession, endSession };
 }
