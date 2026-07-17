@@ -3,7 +3,7 @@ import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 
-type WorkforceContext = {
+export type WorkforceContext = {
   admin: SupabaseClient;
   scoped: SupabaseClient;
   companyId: string;
@@ -27,7 +27,7 @@ export function bearerToken(request: NextRequest) {
   return request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
 }
 
-export async function requireWorkforceManager(request: NextRequest): Promise<WorkforceContext> {
+export async function requireWorkforceIdentity(request: NextRequest): Promise<WorkforceContext> {
   const token = bearerToken(request);
   if (!token) throw new Error("Oturum gerekli.");
   const { publicClient, admin } = configuredClients();
@@ -37,8 +37,8 @@ export async function requireWorkforceManager(request: NextRequest): Promise<Wor
     .select("company_id,role,status,is_active,employee_code")
     .eq("id", authData.user.id)
     .single();
-  if (profileError || !profile || !["CEO", "PARTNER", "MANAGER", "HR", "PLATFORM_ADMIN"].includes(String(profile.role)) || profile.status !== "ACTIVE" || !profile.is_active) {
-    throw new Error("HR yönetim ekranı yetkisi bulunamadı.");
+  if (profileError || !profile || profile.status !== "ACTIVE" || !profile.is_active) {
+    throw new Error("Aktif Workforce kimliği bulunamadı.");
   }
   const scoped = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false },
@@ -52,4 +52,12 @@ export async function requireWorkforceManager(request: NextRequest): Promise<Wor
     employeeCode: profile.employee_code ? String(profile.employee_code) : null,
     role: String(profile.role),
   };
+}
+
+export async function requireWorkforceManager(request: NextRequest): Promise<WorkforceContext> {
+  const context = await requireWorkforceIdentity(request);
+  if (!["CEO", "PARTNER", "MANAGER", "HR", "PLATFORM_ADMIN"].includes(context.role)) {
+    throw new Error("HR yönetim ekranı yetkisi bulunamadı.");
+  }
+  return context;
 }

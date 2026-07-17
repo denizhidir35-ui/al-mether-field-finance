@@ -170,14 +170,20 @@ create table if not exists hr_employee_files (
   id uuid primary key default gen_random_uuid(),
   company_id text not null references companies(id) on delete cascade,
   employee_code text not null,
-  category text not null check (category in ('IDENTITY', 'DOCUMENT', 'PAYROLL', 'CONTRACT', 'CERTIFICATE', 'LEAVE', 'ASSET')),
+  category text not null check (category in ('IDENTITY', 'DOCUMENT', 'PAYROLL', 'CONTRACT', 'CERTIFICATE', 'LEAVE', 'ASSET', 'HEALTH_REPORT', 'MEDICAL', 'CRITICAL')),
+  sensitivity text not null default 'STANDARD' check (sensitivity in ('STANDARD', 'SENSITIVE', 'RESTRICTED')),
   title text not null,
   storage_path text,
+  status text not null default 'ACTIVE' check (status in ('ACTIVE', 'ARCHIVED')),
+  archived_at timestamptz,
+  archived_by uuid references auth.users(id),
   metadata jsonb not null default '{}'::jsonb,
   created_by uuid references auth.users(id),
   created_at timestamptz not null default now(),
   foreign key (company_id, employee_code) references hr_employees(company_id, employee_code),
-  check (storage_path is null or storage_path like company_id || '/' || employee_code || '/%')
+  check (storage_path is null or storage_path like company_id || '/' || employee_code || '/' || category || '/%'),
+  check (category not in ('PAYROLL', 'HEALTH_REPORT', 'MEDICAL', 'CRITICAL') or sensitivity = 'RESTRICTED'),
+  check ((status = 'ACTIVE' and archived_at is null) or status = 'ARCHIVED')
 );
 
 create table if not exists hr_documents (
@@ -197,20 +203,29 @@ create table if not exists hr_document_versions (
   id uuid primary key default gen_random_uuid(),
   company_id text not null references companies(id) on delete cascade,
   document_id uuid not null,
+  employee_code text,
   version integer not null check (version > 0),
   content text not null default '',
   storage_path text,
+  sensitivity text not null default 'STANDARD' check (sensitivity in ('STANDARD', 'SENSITIVE', 'RESTRICTED')),
+  status text not null default 'ACTIVE' check (status in ('ACTIVE', 'ARCHIVED')),
+  archived_at timestamptz,
+  archived_by uuid references auth.users(id),
   created_by uuid references auth.users(id),
   created_at timestamptz not null default now(),
   unique (document_id, version),
-  foreign key (company_id, document_id) references hr_documents(company_id, id)
+  unique (company_id, id),
+  foreign key (company_id, document_id) references hr_documents(company_id, id),
+  foreign key (company_id, employee_code) references hr_employees(company_id, employee_code),
+  check (storage_path is null or (employee_code is not null and storage_path like company_id || '/' || employee_code || '/%')),
+  check ((status = 'ACTIVE' and archived_at is null) or status = 'ARCHIVED')
 );
 
 create table if not exists hr_document_recipients (
   id uuid primary key default gen_random_uuid(),
   company_id text not null references companies(id) on delete cascade,
   document_id uuid not null,
-  version_id uuid not null references hr_document_versions(id),
+  version_id uuid not null,
   employee_code text not null,
   approval_level text not null default 'ACKNOWLEDGEMENT' check (approval_level in ('ACKNOWLEDGEMENT', 'ACCEPTANCE', 'OTP_CONFIRMATION', 'E_SIGNATURE_REQUIRED')),
   status text not null default 'SENT' check (status in ('SENT', 'READ', 'APPROVED', 'REJECTED', 'EXPIRED')),
@@ -219,6 +234,7 @@ create table if not exists hr_document_recipients (
   approved_at timestamptz,
   unique (document_id, version_id, employee_code),
   foreign key (company_id, document_id) references hr_documents(company_id, id),
+  foreign key (company_id, version_id) references hr_document_versions(company_id, id),
   foreign key (company_id, employee_code) references hr_employees(company_id, employee_code)
 );
 
@@ -227,7 +243,7 @@ create table if not exists hr_document_audit_events (
   company_id text not null references companies(id) on delete cascade,
   document_id uuid not null,
   employee_code text,
-  event_type text not null check (event_type in ('CREATED', 'VERSIONED', 'SENT', 'READ', 'APPROVED', 'ARCHIVED')),
+  event_type text not null check (event_type in ('CREATED', 'VERSIONED', 'SENT', 'READ', 'VIEWED', 'DOWNLOADED', 'APPROVED', 'ARCHIVED')),
   metadata jsonb not null default '{}'::jsonb,
   actor_user_id uuid references auth.users(id),
   occurred_at timestamptz not null default now(),
@@ -240,6 +256,13 @@ drop trigger if exists hr_document_audit_no_update on hr_document_audit_events;
 create trigger hr_document_audit_no_update before update on hr_document_audit_events for each row execute function reject_hr_audit_mutation();
 drop trigger if exists hr_document_audit_no_delete on hr_document_audit_events;
 create trigger hr_document_audit_no_delete before delete on hr_document_audit_events for each row execute function reject_hr_audit_mutation();
+
+create or replace function reject_hr_file_delete() returns trigger language plpgsql as $$
+begin raise exception 'HR files are archived, never physically deleted'; end; $$;
+drop trigger if exists hr_employee_files_no_delete on hr_employee_files;
+create trigger hr_employee_files_no_delete before delete on hr_employee_files for each row execute function reject_hr_file_delete();
+drop trigger if exists hr_document_versions_no_delete on hr_document_versions;
+create trigger hr_document_versions_no_delete before delete on hr_document_versions for each row execute function reject_hr_file_delete();
 
 create table if not exists hr_asset_assignments (
   id uuid primary key default gen_random_uuid(),
@@ -324,10 +347,16 @@ create table if not exists hr_leave_requests (
 
 create table if not exists hr_payroll_records (
   id uuid primary key default gen_random_uuid(), company_id text not null references companies(id) on delete cascade,
-  employee_code text not null, period text not null, status text not null default 'DRAFT' check (status in ('DRAFT', 'PUBLISHED')),
-  storage_path text, created_at timestamptz not null default now(), unique (company_id, employee_code, period),
-  foreign key (company_id, employee_code) references hr_employees(company_id, employee_code)
+  employee_code text not null, period text not null, status text not null default 'DRAFT' check (status in ('DRAFT', 'PUBLISHED', 'ARCHIVED')),
+  sensitivity text not null default 'RESTRICTED' check (sensitivity = 'RESTRICTED'),
+  storage_path text, archived_at timestamptz, archived_by uuid references auth.users(id),
+  created_at timestamptz not null default now(), unique (company_id, employee_code, period),
+  foreign key (company_id, employee_code) references hr_employees(company_id, employee_code),
+  check (storage_path is null or storage_path like company_id || '/' || employee_code || '/PAYROLL/%'),
+  check ((status <> 'ARCHIVED' and archived_at is null) or status = 'ARCHIVED')
 );
+drop trigger if exists hr_payroll_records_no_delete on hr_payroll_records;
+create trigger hr_payroll_records_no_delete before delete on hr_payroll_records for each row execute function reject_hr_file_delete();
 
 create table if not exists hr_notifications (
   id uuid primary key default gen_random_uuid(), company_id text not null references companies(id) on delete cascade,
@@ -394,6 +423,13 @@ create or replace function can_view_hr_employee(target_employee_code text, targe
       )
   );
 $$;
+create or replace function can_view_hr_employee_file(target_employee_code text, target_organization_id uuid, target_category text) returns boolean language sql stable security definer set search_path = public as $$
+  select case
+    when target_category in ('PAYROLL', 'HEALTH_REPORT', 'MEDICAL', 'CRITICAL')
+      then can_manage_hr() or target_employee_code = current_employee_code()
+    else can_view_hr_employee(target_employee_code, target_organization_id)
+  end;
+$$;
 create or replace function can_view_hr_document(target_document_id uuid) returns boolean language sql stable security definer set search_path = public as $$
   select can_manage_hr() or exists (
     select 1 from hr_document_recipients recipient
@@ -428,8 +464,8 @@ create or replace function can_view_hr_team(target_team_id uuid, target_departme
     where grant_record.profile_id = auth.uid() and grant_record.status = 'ACTIVE' and grant_record.scope_type = 'SELF' and placement.team_id = target_team_id
   );
 $$;
-revoke all on function can_manage_hr(), can_view_hr_employee(text,uuid), can_view_hr_document(uuid), can_view_hr_organization(uuid), can_view_hr_department(uuid,uuid), can_view_hr_team(uuid,uuid) from public;
-grant execute on function can_manage_hr(), can_view_hr_employee(text,uuid), can_view_hr_document(uuid), can_view_hr_organization(uuid), can_view_hr_department(uuid,uuid), can_view_hr_team(uuid,uuid) to authenticated;
+revoke all on function can_manage_hr(), can_view_hr_employee(text,uuid), can_view_hr_employee_file(text,uuid,text), can_view_hr_document(uuid), can_view_hr_organization(uuid), can_view_hr_department(uuid,uuid), can_view_hr_team(uuid,uuid) from public;
+grant execute on function can_manage_hr(), can_view_hr_employee(text,uuid), can_view_hr_employee_file(text,uuid,text), can_view_hr_document(uuid), can_view_hr_organization(uuid), can_view_hr_department(uuid,uuid), can_view_hr_team(uuid,uuid) to authenticated;
 
 do $$ declare table_name text; begin
   foreach table_name in array array['hr_organizations','hr_departments','hr_teams','hr_employees','hr_employee_placements','hr_company_licenses','hr_role_permissions','hr_access_grants','hr_employee_files','hr_documents','hr_document_versions','hr_document_recipients','hr_document_audit_events','hr_security_audit_logs','hr_asset_assignments','hr_leave_requests','hr_payroll_records','hr_notifications','hr_events','hr_read_models'] loop
@@ -504,7 +540,7 @@ create policy "hr update access grants" on hr_access_grants for update to authen
 
 -- Employee-owned records follow the same scoped employee rule.
 do $$ declare table_name text; begin
-  foreach table_name in array array['hr_employee_files','hr_asset_assignments','hr_leave_requests','hr_payroll_records'] loop
+  foreach table_name in array array['hr_asset_assignments','hr_leave_requests','hr_payroll_records'] loop
     execute format('drop policy if exists "hr scoped records" on %I', table_name);
     execute format('create policy "hr scoped records" on %I for select to authenticated using (company_id = current_company_id() and exists (select 1 from hr_employees employee where employee.company_id = %I.company_id and employee.employee_code = %I.employee_code and can_view_hr_employee(employee.employee_code, employee.organization_id)))', table_name, table_name, table_name);
     execute format('drop policy if exists "hr manage records" on %I', table_name);
@@ -514,6 +550,26 @@ do $$ declare table_name text; begin
     execute format('create policy "hr update records" on %I for update to authenticated using (company_id = current_company_id() and can_manage_hr()) with check (company_id = current_company_id() and can_manage_hr())', table_name);
   end loop;
 end $$;
+
+drop policy if exists "hr scoped records" on hr_employee_files;
+drop policy if exists "hr scoped employee files" on hr_employee_files;
+create policy "hr scoped employee files" on hr_employee_files for select to authenticated using (
+  company_id = current_company_id()
+  and exists (
+    select 1 from hr_employees employee
+    where employee.company_id = hr_employee_files.company_id
+      and employee.employee_code = hr_employee_files.employee_code
+      and can_view_hr_employee_file(employee.employee_code, employee.organization_id, hr_employee_files.category)
+  )
+);
+drop policy if exists "hr manage records" on hr_employee_files;
+drop policy if exists "hr insert records" on hr_employee_files;
+create policy "hr insert records" on hr_employee_files for insert to authenticated
+  with check (company_id = current_company_id() and can_manage_hr());
+drop policy if exists "hr update records" on hr_employee_files;
+create policy "hr update records" on hr_employee_files for update to authenticated
+  using (company_id = current_company_id() and can_manage_hr())
+  with check (company_id = current_company_id() and can_manage_hr());
 
 -- Document visibility is company-scoped for HR and recipient-scoped for employees.
 drop policy if exists "hr scoped documents" on hr_documents;
@@ -532,6 +588,10 @@ do $$ declare table_name text; begin
     execute format('create policy "hr manage document records" on %I for insert to authenticated with check (company_id = current_company_id() and can_manage_hr())', table_name);
   end loop;
 end $$;
+drop policy if exists "hr archive document versions" on hr_document_versions;
+create policy "hr archive document versions" on hr_document_versions for update to authenticated
+  using (company_id = current_company_id() and can_manage_hr())
+  with check (company_id = current_company_id() and can_manage_hr());
 
 drop policy if exists "hr scoped notifications" on hr_notifications;
 create policy "hr scoped notifications" on hr_notifications for select to authenticated using (company_id = current_company_id() and (can_manage_hr() or employee_code = current_employee_code()));
@@ -564,15 +624,24 @@ create policy "hr private document read" on storage.objects for select to authen
   bucket_id = 'hr-private' and (storage.foldername(name))[1] = current_company_id()
   and (
     can_manage_hr()
-    or can_view_hr_employee((storage.foldername(name))[2], (
+    or can_view_hr_employee_file((storage.foldername(name))[2], (
       select employee.organization_id from hr_employees employee
       where employee.company_id = current_company_id() and employee.employee_code = (storage.foldername(name))[2]
-    ))
+    ), (storage.foldername(name))[3])
   )
 );
 drop policy if exists "hr private document upload" on storage.objects;
 create policy "hr private document upload" on storage.objects for insert to authenticated with check (
-  bucket_id = 'hr-private' and (storage.foldername(name))[1] = current_company_id() and can_manage_hr()
+  bucket_id = 'hr-private'
+  and (storage.foldername(name))[1] = current_company_id()
+  and (storage.foldername(name))[3] in ('IDENTITY', 'DOCUMENT', 'PAYROLL', 'CONTRACT', 'CERTIFICATE', 'LEAVE', 'ASSET', 'HEALTH_REPORT', 'MEDICAL', 'CRITICAL')
+  and can_manage_hr()
+  and exists (
+    select 1 from hr_employees employee
+    where employee.company_id = current_company_id()
+      and employee.employee_code = (storage.foldername(name))[2]
+      and employee.status <> 'ARCHIVED'
+  )
 );
 
 create index if not exists hr_employees_org_idx on hr_employees(company_id, organization_id, status);
