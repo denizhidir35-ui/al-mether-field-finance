@@ -8,6 +8,7 @@ export type HrSection =
   | "payroll"
   | "documents"
   | "personnel-file"
+  | "identity-settings"
   | "assets"
   | "notifications";
 
