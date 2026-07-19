@@ -10,6 +10,7 @@ import {
   CircleCheck,
   Clock3,
   FileStack,
+  FileSpreadsheet,
   History,
   KeyRound,
   PackageCheck,
@@ -24,8 +25,9 @@ import {
 } from "lucide-react";
 import type { WorkforceMember, WorkforceRole } from "../domain/workforce";
 import { createWorkforceMember, listWorkforce, resetChiefPin, updatePersonnelChief } from "../services/workforce-client";
+import { PersonnelImportWizard } from "./PersonnelImportWizard";
 
-type Screen = "LIST" | "CREATE" | "DETAIL";
+type Screen = "LIST" | "CREATE" | "DETAIL" | "IMPORT";
 type SortMode = "NAME" | "CODE";
 
 const inputClass = "h-12 w-full rounded-2xl border border-white/[0.07] bg-black/20 px-4 text-[12px] text-white outline-none transition placeholder:text-slate-600 focus:border-blue-400/35";
@@ -163,9 +165,12 @@ export function WorkforceModule({ embedded = false }: { embedded?: boolean }) {
           onSortChange={setSortMode}
           onRefresh={() => void refresh()}
           onCreate={() => setScreen("CREATE")}
+          onImport={tab === "PERSONNEL" ? () => setScreen("IMPORT") : undefined}
           onSelect={openDetail}
         />
       ) : null}
+
+      {screen === "IMPORT" ? <PersonnelImportWizard onBack={() => setScreen("LIST")} onCompleted={() => void refresh()} /> : null}
 
       {screen === "CREATE" ? (
         <form onSubmit={submit} className="mether-surface mether-scroll min-h-0 overflow-y-auto rounded-[24px] p-5 sm:p-6">
@@ -218,7 +223,7 @@ export function WorkforceModule({ embedded = false }: { embedded?: boolean }) {
   );
 }
 
-function WorkforceList({ tab, visible, query, sortMode, loading, onQueryChange, onSortChange, onRefresh, onCreate, onSelect }: {
+function WorkforceList({ tab, visible, query, sortMode, loading, onQueryChange, onSortChange, onRefresh, onCreate, onImport, onSelect }: {
   tab: WorkforceRole;
   visible: WorkforceMember[];
   query: string;
@@ -228,13 +233,17 @@ function WorkforceList({ tab, visible, query, sortMode, loading, onQueryChange, 
   onSortChange: (value: SortMode) => void;
   onRefresh: () => void;
   onCreate: () => void;
+  onImport?: () => void;
   onSelect: (member: WorkforceMember) => void;
 }) {
   const singularLabel = tab === "CHIEF" ? "Şef" : "Personel";
   return <section className="mether-surface min-h-0 overflow-hidden rounded-[24px] p-4 sm:p-5">
     <div className="flex flex-col gap-4 border-b border-white/[.06] pb-5 sm:flex-row sm:items-center sm:justify-between">
       <div><div className="text-[9px] font-black uppercase tracking-[.16em] text-blue-300">{tab === "CHIEF" ? "Şefler" : "Personeller"}</div><h2 className="mt-1.5 text-xl font-black text-white">{visible.length} kayıt</h2></div>
-      <button type="button" onClick={onCreate} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-[10px] font-black text-white transition hover:bg-blue-500"><BadgePlus size={16} />{singularLabel} Ekle</button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        {onImport ? <button type="button" onClick={onImport} className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-blue-400/20 bg-blue-500/[.06] px-5 text-[10px] font-black text-blue-200 transition hover:bg-blue-500/[.1]"><FileSpreadsheet size={16} /> Excel ile Personel Aktar</button> : null}
+        <button type="button" onClick={onCreate} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-[10px] font-black text-white transition hover:bg-blue-500"><BadgePlus size={16} />{singularLabel} Ekle</button>
+      </div>
     </div>
     <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_170px_auto]">
       <label className="relative block"><span className="sr-only">Kayıtlarda ara</span><Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" /><input value={query} onChange={event => onQueryChange(event.target.value)} className={`${inputClass} pl-11`} placeholder="Ad, kod veya görev ara" /></label>

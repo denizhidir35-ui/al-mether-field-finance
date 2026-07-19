@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit",
     "test:operations": "node --experimental-transform-types --test modules/operations/engine/operation-engine.test.ts",
     "test:workforce": "node --experimental-transform-types --test modules/workforce/services/temporary-password.test.ts modules/operations/services/personnel-qr-assignment.test.ts modules/operations/services/qr.service.test.ts modules/operations/services/work-order-number.test.ts",
-    "test:hr": "node --experimental-transform-types --test modules/workforce/services/hr-reducer.test.ts modules/workforce/services/hr-storage-access.test.ts modules/workforce/services/hr-migration-contract.test.ts core/navigation/access-control.test.ts",
+    "test:hr": "node --experimental-transform-types --test modules/workforce/services/hr-reducer.test.ts modules/workforce/services/hr-storage-access.test.ts modules/workforce/services/hr-migration-contract.test.ts modules/workforce/services/personnel-import-validation.test.ts modules/workforce/services/personnel-import-contract.test.ts modules/workforce/services/personnel-import-template.test.ts core/navigation/access-control.test.ts",
     "start": "next start"
   },
   "dependencies": {
@@ -23,6 +23,7 @@
     "qrcode": "^1.5.4",
     "react": "^19.1.3",
     "react-dom": "^19.1.3",
+    "read-excel-file": "^9.3.2",
     "sanitize-html": "^2.17.6"
   },
   "devDependencies": {
@@ -35,8 +36,11 @@
     "@types/react-dom": "^19.0.2",
     "@types/sanitize-html": "^2.16.1",
     "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
+    "postcss": "^8.5.10",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "postcss": "^8.5.10"
   }
 }
