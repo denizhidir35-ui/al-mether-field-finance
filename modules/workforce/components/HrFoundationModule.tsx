@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Bell, Boxes, Building2, CalendarDays, CreditCard, FileCheck2, FileDown, FileText, Fingerprint, FolderArchive, IdCard, LayoutDashboard, Network, Nfc, QrCode, RefreshCw, ScanLine, ShieldCheck, UsersRound, WalletCards } from "lucide-react";
+import { Bell, Boxes, Building2, CalendarDays, Clock3, CreditCard, FileCheck2, FileDown, FileText, Fingerprint, FolderArchive, IdCard, LayoutDashboard, Network, Nfc, QrCode, RefreshCw, ScanLine, ShieldCheck, UsersRound, WalletCards } from "lucide-react";
 import type { AppUser } from "@/types/auth";
 import type { HrSection } from "../domain/hr-foundation";
 import { useHrFoundation } from "../hooks/useHrFoundation";
 import { OrganizationCenter } from "./OrganizationCenter";
 import { WorkforceModule } from "./WorkforceModule";
+import { LeaveManagement } from "./LeaveManagement";
 
 const SECTIONS: { id: HrSection; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard }, { id: "employees", label: "Çalışanlar", icon: UsersRound },
@@ -18,14 +19,16 @@ const SECTIONS: { id: HrSection; label: string; icon: typeof LayoutDashboard }[]
 const inputClass = "h-12 w-full rounded-2xl border border-white/[.07] bg-black/20 px-4 text-[12px] text-white outline-none transition focus:border-blue-400/35";
 
 export function HrFoundationModule({ user }: { user: AppUser }) {
-  const [section, setSection] = useState<HrSection>("dashboard");
-  const { snapshot, loading, error, refresh, execute } = useHrFoundation();
-  const selected = SECTIONS.find(item => item.id === section) ?? SECTIONS[0];
+  const selfService = user.role === "EMPLOYEE";
+  const [section, setSection] = useState<HrSection>(selfService ? "leave" : "dashboard");
+  const { snapshot, loading, error, refresh, execute } = useHrFoundation(!selfService);
+  const visibleSections = selfService ? SECTIONS.filter(item => item.id === "leave") : SECTIONS;
+  const selected = visibleSections.find(item => item.id === section) ?? visibleSections[0];
   const canManage = ["CEO", "PARTNER", "HR", "PLATFORM_ADMIN"].includes(user.role);
   return <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[228px_minmax(0,1fr)]">
     <aside className="mether-surface mether-scroll grid min-h-0 grid-cols-2 gap-1.5 rounded-[24px] p-3 sm:grid-cols-3 lg:flex lg:flex-col lg:overflow-y-auto">
       <div className="col-span-full hidden px-3 pb-4 pt-2 lg:block"><div className="text-[9px] font-black uppercase tracking-[.2em] text-blue-400">HR Foundation</div><div className="mt-1.5 text-base font-black text-white">İnsan Kaynakları</div><div className="mt-1 text-[9px] text-slate-600">{user.companyId} · {user.role}</div></div>
-      {SECTIONS.map(item => { const Icon = item.icon; const active = item.id === section; return <button key={item.id} onClick={() => setSection(item.id)} className={`flex min-h-11 min-w-0 items-center gap-2.5 rounded-xl px-3 text-left text-[10px] font-bold transition sm:gap-3 ${active ? "bg-blue-600 text-white shadow-lg shadow-blue-950/25" : "text-slate-500 hover:bg-white/[.04] hover:text-slate-200"}`}><Icon size={15} className="shrink-0"/><span className="truncate">{item.label}</span></button>; })}
+      {visibleSections.map(item => { const Icon = item.icon; const active = item.id === section; return <button key={item.id} onClick={() => setSection(item.id)} className={`flex min-h-11 min-w-0 items-center gap-2.5 rounded-xl px-3 text-left text-[10px] font-bold transition sm:gap-3 ${active ? "bg-blue-600 text-white shadow-lg shadow-blue-950/25" : "text-slate-500 hover:bg-white/[.04] hover:text-slate-200"}`}><Icon size={15} className="shrink-0"/><span className="truncate">{item.label}</span></button>; })}
     </aside>
     <section className="grid min-h-0 grid-rows-[auto_1fr] gap-4">
       <header className="mether-surface flex items-center justify-between rounded-[24px] px-5 py-4 sm:px-6"><div><div className="text-[9px] font-black uppercase tracking-[.18em] text-blue-400">HR · {selected.label}</div><h1 className="mt-1.5 text-xl font-black text-white sm:text-2xl">{selected.label}</h1></div><button onClick={() => void refresh()} disabled={loading} aria-label="Verileri yenile" className="grid h-11 w-11 place-items-center rounded-xl border border-white/[.07] text-slate-500 transition hover:bg-white/[.04] hover:text-blue-300"><RefreshCw size={15} className={loading ? "animate-spin" : ""}/></button></header>
@@ -37,7 +40,7 @@ export function HrFoundationModule({ user }: { user: AppUser }) {
         {section === "documents" ? <Documents canManage={canManage} snapshot={snapshot} execute={execute}/> : null}
         {section === "personnel-file" ? <PersonnelFiles employees={snapshot?.employees ?? []}/> : null}
         {section === "identity-settings" ? <PersonIdentitySettings/> : null}
-        {section === "leave" ? <FoundationList title="İzin Yönetimi" count={snapshot?.counts.leave ?? 0} description="İzin talepleri, yönetici onayı ve izin geçmişi şirket kapsamında yönetilir."/> : null}
+        {section === "leave" ? <LeaveManagement user={user} employees={snapshot?.employees ?? []}/> : null}
         {section === "payroll" ? <FoundationList title="Bordro" count={snapshot?.counts.payroll ?? 0} description="Bordrolar personelin dijital dosyasına dönem ve versiyon bilgisiyle bağlanır."/> : null}
         {section === "assets" ? <FoundationList title="Zimmetler" count={snapshot?.counts.assets ?? 0} description="Fiziksel varlık kendi modülünde kalır; HR yalnızca çalışan atamasını yönetir."/> : null}
         {section === "notifications" ? <FoundationList title="Bildirimler" count={snapshot?.counts.notifications ?? 0} description="Belge, izin ve personel yaşam döngüsü bildirimleri tek akışta görünür."/> : null}
@@ -50,7 +53,7 @@ type Snapshot = ReturnType<typeof useHrFoundation>["snapshot"];
 type Execute = ReturnType<typeof useHrFoundation>["execute"];
 
 function Dashboard({ snapshot }: { snapshot: Snapshot }) {
-  const cards = [["Çalışan", snapshot?.employees.length ?? 0, UsersRound], ["Organizasyon", snapshot?.organizations.length ?? 0, Building2], ["Departman", snapshot?.departments.length ?? 0, Network], ["Takım", snapshot?.teams.length ?? 0, ShieldCheck], ["Aktivasyon Bekliyor", snapshot?.counts.pendingActivation ?? 0, Bell], ["Dijital Belge", snapshot?.documents.length ?? 0, FileCheck2]] as const;
+  const cards = [["Çalışan", snapshot?.employees.length ?? 0, UsersRound], ["Organizasyon", snapshot?.organizations.length ?? 0, Building2], ["Onay Bekleyen İzin", snapshot?.counts.pendingLeave ?? 0, Clock3], ["Bugün İzinde", snapshot?.counts.todayOnLeave ?? 0, CalendarDays], ["Aktivasyon Bekliyor", snapshot?.counts.pendingActivation ?? 0, Bell], ["Dijital Belge", snapshot?.documents.length ?? 0, FileCheck2]] as const;
   return <div className="grid gap-4"><div className="grid grid-cols-2 gap-3 xl:grid-cols-3">{cards.map(([label, value, Icon]) => <article key={label} className="mether-surface rounded-[22px] p-4 sm:p-5"><div className="flex items-center justify-between gap-3 text-[8px] font-black uppercase tracking-[.14em] text-slate-500 sm:text-[9px]">{label}<Icon size={16} className="shrink-0 text-blue-400"/></div><div className="mt-5 text-2xl font-black text-white sm:text-3xl">{value}</div></article>)}</div><article className="mether-surface rounded-[24px] p-5 sm:p-6"><div className="text-[9px] font-black uppercase tracking-[.18em] text-blue-400">Company → Organization → Department → Team → Employee</div><div className="mt-5 grid gap-3 lg:grid-cols-2">{snapshot?.organizations.map(org => <div key={org.id} className="rounded-2xl border border-white/[.06] bg-black/10 p-4 sm:p-5"><div className="text-sm font-black text-white">{org.name}</div><div className="mt-1 text-[9px] text-blue-300">{org.code}</div><div className="mt-4 text-[9px] text-slate-500">{snapshot.departments.filter(dep => dep.organizationId === org.id).length} departman</div></div>)}{!snapshot?.organizations.length ? <Empty text="İlk organizasyonu Organizasyonlar bölümünden oluştur."/> : null}</div></article></div>;
 }
 

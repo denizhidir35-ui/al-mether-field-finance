@@ -22,18 +22,21 @@ function codeFrom(value: string, prefix: string) {
 }
 
 async function snapshot({ scoped, companyId }: Context): Promise<HrFoundationSnapshot> {
-  const [organizations, departments, teams, employees, documents, leave, payroll, assets, notifications] = await Promise.all([
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  const [organizations, departments, teams, employees, documents, leave, pendingLeave, todayOnLeave, payroll, assets, notifications] = await Promise.all([
     scoped.from("hr_organizations").select("id,code,name,status").eq("company_id", companyId).order("name"),
     scoped.from("hr_departments").select("id,organization_id,code,name,manager_employee_code,status").eq("company_id", companyId).order("name"),
     scoped.from("hr_teams").select("id,department_id,code,name,manager_employee_code,status").eq("company_id", companyId).order("name"),
     scoped.from("hr_employees").select("id,employee_code,display_name,phone,job_title,hr_role,organization_id,department_id,team_id,manager_employee_code,activation_status,status").eq("company_id", companyId).order("display_name"),
     scoped.from("hr_documents").select("id,document_code,title,status,hr_document_versions(version),hr_document_recipients(count)").eq("company_id", companyId).order("created_at", { ascending: false }),
     scoped.from("hr_leave_requests").select("id", { count: "exact", head: true }).eq("company_id", companyId),
+    scoped.from("hr_leave_requests").select("id", { count: "exact", head: true }).eq("company_id", companyId).eq("status", "PENDING"),
+    scoped.from("hr_leave_requests").select("id", { count: "exact", head: true }).eq("company_id", companyId).eq("status", "APPROVED").lte("starts_on", todayUtc).gte("ends_on", todayUtc),
     scoped.from("hr_payroll_records").select("id", { count: "exact", head: true }).eq("company_id", companyId),
     scoped.from("hr_asset_assignments").select("id", { count: "exact", head: true }).eq("company_id", companyId).is("returned_at", null),
     scoped.from("hr_notifications").select("id", { count: "exact", head: true }).eq("company_id", companyId).eq("is_read", false),
   ]);
-  const failed = [organizations, departments, teams, employees, documents, leave, payroll, assets, notifications].find(result => result.error);
+  const failed = [organizations, departments, teams, employees, documents, leave, pendingLeave, todayOnLeave, payroll, assets, notifications].find(result => result.error);
   if (failed?.error) {
     if (failed.error.code === "42P01" || failed.error.code === "PGRST205") throw new Error("HR Foundation migration henüz Supabase üzerinde çalıştırılmamış.");
     throw failed.error;
@@ -49,7 +52,7 @@ async function snapshot({ scoped, companyId }: Context): Promise<HrFoundationSna
       const recipients = Array.isArray(row.hr_document_recipients) ? row.hr_document_recipients : [];
       return { id: String(row.id), documentCode: String(row.document_code), title: String(row.title), status: String(row.status), version: Math.max(0, ...versions.map(item => Number(item.version) || 0)), recipientCount: Number(recipients[0]?.count ?? 0) };
     }),
-    counts: { leave: leave.count ?? 0, payroll: payroll.count ?? 0, assets: assets.count ?? 0, notifications: notifications.count ?? 0, pendingActivation: (employees.data ?? []).filter(row => row.activation_status !== "ACTIVE").length },
+    counts: { leave: leave.count ?? 0, pendingLeave: pendingLeave.count ?? 0, todayOnLeave: todayOnLeave.count ?? 0, payroll: payroll.count ?? 0, assets: assets.count ?? 0, notifications: notifications.count ?? 0, pendingActivation: (employees.data ?? []).filter(row => row.activation_status !== "ACTIVE").length },
   };
 }
 

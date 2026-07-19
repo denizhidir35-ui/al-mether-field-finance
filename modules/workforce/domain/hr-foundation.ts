@@ -37,7 +37,7 @@ export type HrFoundationSnapshot = {
   teams: HrTeam[];
   employees: HrEmployee[];
   documents: HrDocument[];
-  counts: { leave: number; payroll: number; assets: number; notifications: number; pendingActivation: number };
+  counts: { leave: number; pendingLeave: number; todayOnLeave: number; payroll: number; assets: number; notifications: number; pendingActivation: number };
 };
 
 export type HrCreateCommand =

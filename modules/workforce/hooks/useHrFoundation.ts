@@ -4,18 +4,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { HrCreateCommand, HrFoundationSnapshot } from "../domain/hr-foundation";
 import { HttpHrRepository } from "../repositories/http-hr.repository";
 
-export function useHrFoundation() {
+export function useHrFoundation(enabled = true) {
   const repository = useMemo(() => new HttpHrRepository(), []);
   const [snapshot, setSnapshot] = useState<HrFoundationSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
+    if (!enabled) { setLoading(false); setError(""); return; }
     setLoading(true);
     try { setSnapshot(await repository.loadFoundation()); setError(""); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "HR Foundation yüklenemedi."); }
     finally { setLoading(false); }
-  }, [repository]);
+  }, [enabled, repository]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 

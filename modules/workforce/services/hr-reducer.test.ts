@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { reduceHrProjection } from "./hr-reducer.ts";
 
-const empty = { organizations: [], departments: [], teams: [], employees: [], documents: [], counts: { leave: 0, payroll: 0, assets: 0, notifications: 0, pendingActivation: 0 } };
+const empty = { organizations: [], departments: [], teams: [], employees: [], documents: [], counts: { leave: 0, pendingLeave: 0, todayOnLeave: 0, payroll: 0, assets: 0, notifications: 0, pendingActivation: 0 } };
 
 test("HR reducer advances sequence and aggregate revision", () => {
   const first = reduceHrProjection(null, { sequence: 1, eventType: "ORGANIZATION_CREATED", aggregateType: "ORGANIZATION", aggregateId: "org-1" }, empty);
