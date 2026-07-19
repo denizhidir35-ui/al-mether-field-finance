@@ -10,8 +10,7 @@ import { WorkforceModule } from "./WorkforceModule";
 
 const SECTIONS: { id: HrSection; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard }, { id: "employees", label: "Çalışanlar", icon: UsersRound },
-  { id: "organizations", label: "Organizasyon Yapısı", icon: Building2 }, { id: "departments", label: "Departmanlar", icon: Network },
-  { id: "teams", label: "Takımlar", icon: ShieldCheck }, { id: "leave", label: "İzin Yönetimi", icon: CalendarDays },
+  { id: "organizations", label: "Organizasyon Yapısı", icon: Building2 }, { id: "leave", label: "İzin Yönetimi", icon: CalendarDays },
   { id: "payroll", label: "Bordro", icon: WalletCards }, { id: "documents", label: "Belgeler", icon: FileText },
   { id: "personnel-file", label: "Personel Dosyası", icon: FolderArchive }, { id: "assets", label: "Zimmetler", icon: Boxes },
   { id: "notifications", label: "Bildirimler", icon: Bell }, { id: "identity-settings", label: "Personel Kimliği", icon: IdCard },

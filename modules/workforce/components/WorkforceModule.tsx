@@ -33,7 +33,7 @@ type SortMode = "NAME" | "CODE";
 const inputClass = "h-12 w-full rounded-2xl border border-white/[0.07] bg-black/20 px-4 text-[12px] text-white outline-none transition placeholder:text-slate-600 focus:border-blue-400/35";
 
 export function WorkforceModule({ embedded = false }: { embedded?: boolean }) {
-  const [tab, setTab] = useState<WorkforceRole>("CHIEF");
+  const [createRole, setCreateRole] = useState<WorkforceRole>("PERSONNEL");
   const [screen, setScreen] = useState<Screen>("LIST");
   const [members, setMembers] = useState<WorkforceMember[]>([]);
   const [displayName, setDisplayName] = useState("");
@@ -55,10 +55,9 @@ export function WorkforceModule({ embedded = false }: { embedded?: boolean }) {
   const visible = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("tr-TR");
     return members
-      .filter(item => item.role === tab)
       .filter(item => !normalizedQuery || [item.displayName, item.employeeCode, item.title, item.assignedChiefCode].some(value => value?.toLocaleLowerCase("tr-TR").includes(normalizedQuery)))
       .sort((left, right) => (sortMode === "NAME" ? left.displayName.localeCompare(right.displayName, "tr-TR") : left.employeeCode.localeCompare(right.employeeCode, "tr-TR")));
-  }, [members, query, sortMode, tab]);
+  }, [members, query, sortMode]);
 
   async function refresh(preferredCode?: string) {
     setLoading(true);
@@ -86,7 +85,7 @@ export function WorkforceModule({ embedded = false }: { embedded?: boolean }) {
     setBusy(true);
     setError("");
     try {
-      const result = tab === "CHIEF"
+      const result = createRole === "CHIEF"
         ? await createWorkforceMember({ role: "CHIEF", displayName })
         : await createWorkforceMember({ role: "PERSONNEL", displayName, title, assignedChiefCode, phone });
       setDisplayName("");
@@ -126,37 +125,20 @@ export function WorkforceModule({ embedded = false }: { embedded?: boolean }) {
     }
   }
 
-  function changeTab(next: WorkforceRole) {
-    setTab(next);
-    setScreen("LIST");
-    setSelectedCode(null);
-    setQuery("");
-    setError("");
-  }
-
   function openDetail(member: WorkforceMember) {
     setSelectedCode(member.employeeCode);
     setScreen("DETAIL");
     setError("");
   }
 
-  const singularLabel = tab === "CHIEF" ? "Şef" : "Personel";
-
   return (
-    <div className={`grid h-full min-h-0 gap-4 ${embedded ? "grid-rows-[auto_1fr]" : "lg:grid-rows-[auto_1fr]"}`}>
-      <header className={embedded ? "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end" : "mether-surface flex flex-col gap-4 rounded-[24px] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6"}>
-        {!embedded ? <div><div className="text-[9px] font-black uppercase tracking-[.2em] text-blue-400">HR</div><h1 className="mt-1.5 text-2xl font-black text-white">Şef ve Personel Yönetimi</h1></div> : null}
-        <div className="grid w-full grid-cols-2 rounded-2xl border border-white/[.07] bg-black/20 p-1 sm:w-auto sm:min-w-[300px]">
-          <button type="button" onClick={() => changeTab("CHIEF")} className={`h-11 rounded-xl px-3 text-[10px] font-black transition sm:px-5 ${tab === "CHIEF" ? "bg-blue-600 text-white shadow-lg shadow-blue-950/25" : "text-slate-500 hover:text-white"}`}>Şef Yönetimi</button>
-          <button type="button" onClick={() => changeTab("PERSONNEL")} className={`h-11 rounded-xl px-3 text-[10px] font-black transition sm:px-5 ${tab === "PERSONNEL" ? "bg-blue-600 text-white shadow-lg shadow-blue-950/25" : "text-slate-500 hover:text-white"}`}>Personel Yönetimi</button>
-        </div>
-      </header>
+    <div className="grid h-full min-h-0 grid-rows-[auto_1fr] gap-4">
+      {!embedded ? <header className="mether-surface rounded-[24px] px-5 py-5 sm:px-6"><div className="text-[9px] font-black uppercase tracking-[.2em] text-blue-400">HR</div><h1 className="mt-1.5 text-2xl font-black text-white">Çalışanlar</h1><p className="mt-2 text-[10px] text-slate-500">Şefler, yöneticiler ve personel tek çalışan dizininde yönetilir.</p></header> : <div className="sr-only">Çalışanlar</div>}
 
       {error ? <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-[10px] text-rose-200">{error}</div> : null}
 
       {screen === "LIST" ? (
         <WorkforceList
-          tab={tab}
           visible={visible}
           query={query}
           sortMode={sortMode}
@@ -164,8 +146,8 @@ export function WorkforceModule({ embedded = false }: { embedded?: boolean }) {
           onQueryChange={setQuery}
           onSortChange={setSortMode}
           onRefresh={() => void refresh()}
-          onCreate={() => setScreen("CREATE")}
-          onImport={tab === "PERSONNEL" ? () => setScreen("IMPORT") : undefined}
+          onCreate={() => { setCreateRole("PERSONNEL"); setScreen("CREATE"); }}
+          onImport={() => setScreen("IMPORT")}
           onSelect={openDetail}
         />
       ) : null}
@@ -174,26 +156,27 @@ export function WorkforceModule({ embedded = false }: { embedded?: boolean }) {
 
       {screen === "CREATE" ? (
         <form onSubmit={submit} className="mether-surface mether-scroll min-h-0 overflow-y-auto rounded-[24px] p-5 sm:p-6">
-          <ScreenHeader eyebrow={`Yeni ${singularLabel}`} title={`${singularLabel} oluştur`} description="Gerekli bilgileri tamamlayın. Personel kodu sistem tarafından otomatik oluşturulur." onBack={() => setScreen("LIST")} />
+          <ScreenHeader eyebrow="Yeni Çalışan" title="Çalışan oluştur" description="Rolü ve gerekli bilgileri tamamlayın. Çalışan kodu sistem tarafından otomatik oluşturulur." onBack={() => setScreen("LIST")} />
           <div className="mt-6 grid gap-4 xl:grid-cols-2">
             <FormGroup title="Kişisel Bilgiler" icon={UserRound}>
               <Field label="Ad Soyad"><input aria-label="Ad Soyad" required value={displayName} onChange={event => setDisplayName(event.target.value)} className={inputClass} placeholder="Ad ve soyad" autoComplete="name" /></Field>
             </FormGroup>
-            {tab === "PERSONNEL" ? <>
+            <FormGroup title="İş Bilgileri" icon={BriefcaseBusiness}>
+              <Field label="Rol"><select aria-label="Çalışan Rolü" value={createRole} onChange={event => setCreateRole(event.target.value as WorkforceRole)} className={inputClass}><option value="PERSONNEL">Personel</option><option value="CHIEF">Saha Şefi</option></select></Field>
+              {createRole === "PERSONNEL" ? <Field label="Görev"><input aria-label="Görev" required value={title} onChange={event => setTitle(event.target.value)} className={inputClass} placeholder="Görev" /></Field> : <div className="rounded-xl border border-blue-400/10 bg-blue-500/[.04] p-3 text-[9px] leading-5 text-blue-200">Saha Şefi için personel numarası ve 4 haneli PIN otomatik oluşturulur.</div>}
+            </FormGroup>
+            {createRole === "PERSONNEL" ? <>
               <FormGroup title="İletişim" icon={Phone}>
                 <Field label="Telefon"><input aria-label="Telefon" required value={phone} onChange={event => setPhone(event.target.value)} className={inputClass} placeholder="+90 5xx xxx xx xx" inputMode="tel" autoComplete="tel" /></Field>
               </FormGroup>
               <FormGroup title="Organizasyon" icon={UsersRound}>
                 <Field label="Bağlı Şef"><select aria-label="Şef" required value={assignedChiefCode} onChange={event => setAssignedChiefCode(event.target.value)} className={inputClass}><option value="">Şef seçin</option>{activeChiefs.map(chief => <option key={chief.id} value={chief.employeeCode}>{chief.employeeCode} · {chief.displayName}</option>)}</select></Field>
               </FormGroup>
-              <FormGroup title="İş Bilgileri" icon={BriefcaseBusiness}>
-                <Field label="Görev"><input aria-label="Görev" required value={title} onChange={event => setTitle(event.target.value)} className={inputClass} placeholder="Görev" /></Field>
-              </FormGroup>
             </> : null}
           </div>
           <div className="mt-6 flex flex-col-reverse gap-2 border-t border-white/[.06] pt-5 sm:flex-row sm:justify-end">
             <button type="button" onClick={() => setScreen("LIST")} className="h-12 rounded-2xl border border-white/[.08] px-5 text-[10px] font-black text-slate-400 transition hover:text-white">Vazgeç</button>
-            <button disabled={busy} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 text-[10px] font-black text-white transition hover:bg-blue-500 disabled:opacity-50"><BadgePlus size={16} />{busy ? "Kaydediliyor..." : `${singularLabel} Oluştur`}</button>
+            <button disabled={busy} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 text-[10px] font-black text-white transition hover:bg-blue-500 disabled:opacity-50"><BadgePlus size={16} />{busy ? "Kaydediliyor..." : "Çalışan Oluştur"}</button>
           </div>
         </form>
       ) : null}
@@ -207,6 +190,7 @@ export function WorkforceModule({ embedded = false }: { embedded?: boolean }) {
               <DetailGroup title="Temel Bilgiler">
                 <DetailValue label="Ad Soyad" value={selected.displayName} />
                 <DetailValue label="Görev" value={selected.role === "CHIEF" ? "Saha Şefi" : selected.title ?? "Belirtilmemiş"} />
+                <DetailValue label="Rol" value={selected.role === "CHIEF" ? "Şef / Yönetici" : "Personel"} />
                 <DetailValue label="Durum" value={selected.status} tone={selected.status === "ACTIVE" ? "success" : "default"} />
               </DetailGroup>
               {selected.role === "PERSONNEL" ? <DetailGroup title="KİMLİK"><DetailValue label="Personel No" value={selected.employeeCode} /><DetailValue label="QR" value={selected.qrValue ? "Hazır" : "Oluşturulmamış"} tone={selected.qrValue ? "success" : "default"} /><DetailValue label="Dijital Kimlik" value="Tasarım planı" /><DetailValue label="Kart Durumu" value="Tasarım planı" /><DetailValue label="Son Taranma" value="Veri bağlantısı bekleniyor" /></DetailGroup> : <DetailGroup title="KİMLİK"><DetailValue label="Şef No" value={selected.employeeCode} /><DetailValue label="Giriş Kimliği" value="4 haneli PIN" /></DetailGroup>}
@@ -223,8 +207,7 @@ export function WorkforceModule({ embedded = false }: { embedded?: boolean }) {
   );
 }
 
-function WorkforceList({ tab, visible, query, sortMode, loading, onQueryChange, onSortChange, onRefresh, onCreate, onImport, onSelect }: {
-  tab: WorkforceRole;
+function WorkforceList({ visible, query, sortMode, loading, onQueryChange, onSortChange, onRefresh, onCreate, onImport, onSelect }: {
   visible: WorkforceMember[];
   query: string;
   sortMode: SortMode;
@@ -236,13 +219,12 @@ function WorkforceList({ tab, visible, query, sortMode, loading, onQueryChange, 
   onImport?: () => void;
   onSelect: (member: WorkforceMember) => void;
 }) {
-  const singularLabel = tab === "CHIEF" ? "Şef" : "Personel";
   return <section className="mether-surface min-h-0 overflow-hidden rounded-[24px] p-4 sm:p-5">
     <div className="flex flex-col gap-4 border-b border-white/[.06] pb-5 sm:flex-row sm:items-center sm:justify-between">
-      <div><div className="text-[9px] font-black uppercase tracking-[.16em] text-blue-300">{tab === "CHIEF" ? "Şefler" : "Personeller"}</div><h2 className="mt-1.5 text-xl font-black text-white">{visible.length} kayıt</h2></div>
+      <div><div className="text-[9px] font-black uppercase tracking-[.16em] text-blue-300">Çalışan Dizini</div><h2 className="mt-1.5 text-xl font-black text-white">{visible.length} çalışan</h2><p className="mt-1 text-[9px] text-slate-600">Şefler ve personel görevleriyle birlikte tek listede gösterilir.</p></div>
       <div className="flex flex-col gap-2 sm:flex-row">
-        {onImport ? <button type="button" onClick={onImport} className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-blue-400/20 bg-blue-500/[.06] px-5 text-[10px] font-black text-blue-200 transition hover:bg-blue-500/[.1]"><FileSpreadsheet size={16} /> Excel ile Personel Aktar</button> : null}
-        <button type="button" onClick={onCreate} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-[10px] font-black text-white transition hover:bg-blue-500"><BadgePlus size={16} />{singularLabel} Ekle</button>
+        {onImport ? <button type="button" onClick={onImport} className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-blue-400/20 bg-blue-500/[.06] px-5 text-[10px] font-black text-blue-200 transition hover:bg-blue-500/[.1]"><FileSpreadsheet size={16} /> Excel ile Aktar</button> : null}
+        <button type="button" onClick={onCreate} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-[10px] font-black text-white transition hover:bg-blue-500"><BadgePlus size={16} />Çalışan Ekle</button>
       </div>
     </div>
     <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_170px_auto]">
@@ -252,7 +234,7 @@ function WorkforceList({ tab, visible, query, sortMode, loading, onQueryChange, 
     </div>
     <div className="mether-scroll mt-4 grid max-h-[52vh] gap-2 overflow-y-auto pr-1 md:grid-cols-2 xl:grid-cols-3">
       {loading ? Array.from({ length: 6 }, (_, index) => <LoadingCard key={index} />) : visible.map(member => <button key={member.id} type="button" onClick={() => onSelect(member)} className="group rounded-2xl border border-white/[.055] bg-black/10 p-4 text-left transition hover:-translate-y-0.5 hover:border-blue-400/20 hover:bg-blue-500/[.04]"><div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-500/[.09] text-[11px] font-black text-blue-300">{initials(member.displayName)}</div><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><div className="truncate text-[12px] font-black text-white">{member.displayName}</div><ChevronRight size={15} className="shrink-0 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-blue-300" /></div><div className="mt-1 truncate text-[9px] text-slate-500">{member.role === "CHIEF" ? "Saha Şefi" : member.title ?? "Personel"}</div></div></div><div className="mt-4 flex items-center justify-between gap-2 border-t border-white/[.05] pt-3"><span className="text-[9px] font-black text-blue-300">{member.employeeCode}</span><span className={`text-[8px] font-black uppercase tracking-[.1em] ${member.status === "ACTIVE" ? "text-emerald-300" : "text-slate-500"}`}>{member.status}</span></div>{member.role === "PERSONNEL" ? <div className="mt-2 truncate text-[8px] text-slate-600">Bağlı şef: {member.assignedChiefCode ?? "Atanmamış"}</div> : null}</button>)}
-      {!loading && visible.length === 0 ? <div className="col-span-full rounded-2xl border border-dashed border-white/[.09] bg-black/10 p-8 text-center"><UsersRound size={22} className="mx-auto text-blue-300" /><div className="mt-4 text-[12px] font-black text-white">{query ? "Aramanızla eşleşen kayıt yok" : `Henüz ${singularLabel.toLocaleLowerCase("tr-TR")} bulunmuyor`}</div><p className="mt-2 text-[10px] text-slate-500">{query ? "Arama ifadenizi değiştirerek tekrar deneyin." : "İlk kaydınızı oluşturarak başlayabilirsiniz."}</p>{!query ? <button type="button" onClick={onCreate} className="mt-5 h-11 rounded-xl bg-blue-600 px-5 text-[10px] font-black text-white">{singularLabel} Ekle</button> : null}</div> : null}
+      {!loading && visible.length === 0 ? <div className="col-span-full rounded-2xl border border-dashed border-white/[.09] bg-black/10 p-8 text-center"><UsersRound size={22} className="mx-auto text-blue-300" /><div className="mt-4 text-[12px] font-black text-white">{query ? "Aramanızla eşleşen kayıt yok" : "Henüz çalışan bulunmuyor"}</div><p className="mt-2 text-[10px] text-slate-500">{query ? "Arama ifadenizi değiştirerek tekrar deneyin." : "İlk çalışanınızı oluşturarak başlayabilirsiniz."}</p>{!query ? <button type="button" onClick={onCreate} className="mt-5 h-11 rounded-xl bg-blue-600 px-5 text-[10px] font-black text-white">Çalışan Ekle</button> : null}</div> : null}
     </div>
   </section>;
 }
