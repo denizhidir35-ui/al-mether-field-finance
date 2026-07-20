@@ -9,7 +9,7 @@ export function OperationsKPIs({ items }: { items: readonly OperationsKPI[] }) {
       {items.map((item, index) => {
         const Icon = ICONS[index];
         return (
-          <article key={item.label} className="rounded-[14px] border border-white/[0.065] bg-white/[0.022] px-2 py-1.5 xl:rounded-[18px] xl:px-3.5 xl:py-3">
+          <article key={item.label} className="mether-kpi px-2 py-1.5 xl:rounded-[18px] xl:px-3.5 xl:py-3">
             <div className="flex items-center justify-between gap-1"><span className="text-[7px] font-bold uppercase tracking-[0.08em] text-slate-500 xl:text-[8px] xl:tracking-[0.12em]"><span className="xl:hidden">{item.mobileLabel}</span><span className="hidden xl:inline">{item.label}</span></span><Icon size={12} className="shrink-0 text-blue-400/65 xl:h-[14px] xl:w-[14px]" /></div>
             <div className="mt-1 text-base font-black leading-none tracking-[-0.04em] text-slate-100 xl:mt-2 xl:text-xl">{item.value}</div>
             <div className="mt-0.5 hidden truncate text-[8px] text-slate-600 sm:block">{item.detail}</div>

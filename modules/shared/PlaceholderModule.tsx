@@ -27,7 +27,7 @@ export function PlaceholderModule({
             <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-400/80">
               {eyebrow}
             </div>
-            <h1 className="mt-1 text-2xl font-black tracking-[-0.04em] text-white sm:text-[30px]">
+            <h1 className="mether-page-title mt-1 font-black">
               {title}
             </h1>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
