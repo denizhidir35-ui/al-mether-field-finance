@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 type LoginScreenProps = {
   onAuthenticate: (email: string, password: string) => Promise<void>;
@@ -80,7 +81,8 @@ export function LoginScreen({ onAuthenticate, onEmployeeLogin, onEmployeeActivat
   }
 
   return (
-    <main className="grid min-h-screen place-items-center px-4">
+    <main className="relative grid min-h-screen place-items-center px-4">
+      <ThemeToggle className="absolute right-4 top-4" />
       <section className="mether-surface w-full max-w-[390px] rounded-[28px] p-6 sm:p-7">
         <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 shadow-[0_0_35px_rgba(59,130,246,.32)]" />
         <div className="mt-5 text-[11px] font-bold uppercase tracking-[0.22em] text-blue-400">AL METHER</div>

@@ -33,7 +33,7 @@ export function MobileNavigation({
   onChange
 }: MobileNavigationProps) {
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-50 flex justify-center rounded-2xl border border-white/10 bg-[#08101e]/92 p-1.5 shadow-2xl backdrop-blur-2xl lg:hidden">
+    <nav className="mether-mobile-nav fixed inset-x-3 bottom-3 z-50 flex justify-center rounded-2xl border p-1.5 shadow-2xl backdrop-blur-2xl lg:hidden">
       {ITEMS.filter(item => modulesForUser(user).includes(item.id)).map(item => {
         const Icon = item.icon;
         const active = activeModule === item.id;

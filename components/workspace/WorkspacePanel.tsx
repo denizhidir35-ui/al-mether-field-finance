@@ -33,7 +33,7 @@ export const WorkspacePanel = forwardRef<HTMLDivElement, WorkspacePanelProps>(fu
       }}
       tabIndex={-1}
       style={{ transform: active ? "translate3d(0,0,0) scale(1)" : originTransform, opacity: active ? 1 : origin ? 0.82 : 0 }}
-      className={`relative z-10 flex h-[min(780px,calc(100dvh-48px))] w-[min(1080px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-white/[0.1] bg-[linear-gradient(145deg,rgba(13,22,40,.98),rgba(5,11,24,.98))] shadow-[0_40px_120px_rgba(0,0,0,.62)] outline-none transition-[transform,opacity] duration-[250ms] ease-[cubic-bezier(.22,1,.36,1)] will-change-transform max-md:h-dvh max-md:w-screen max-md:rounded-none max-md:border-0 ${className}`}
+      className={`theme-dark-zone relative z-10 flex h-[min(780px,calc(100dvh-48px))] w-[min(1080px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-white/[0.1] bg-[linear-gradient(145deg,rgba(13,22,40,.98),rgba(5,11,24,.98))] shadow-[0_40px_120px_rgba(0,0,0,.62)] outline-none transition-[transform,opacity] duration-[250ms] ease-[cubic-bezier(.22,1,.36,1)] will-change-transform max-md:h-dvh max-md:w-screen max-md:rounded-none max-md:border-0 ${className}`}
       {...props}
     >
       {children}

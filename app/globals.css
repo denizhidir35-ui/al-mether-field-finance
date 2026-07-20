@@ -3,13 +3,33 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: light;
+  --background: #ffffff;
+  --background-soft: #f6f8fc;
+  --surface: rgba(255, 255, 255, 0.92);
+  --surface-soft: rgba(248, 250, 252, 0.88);
+  --line: rgba(15, 23, 42, 0.1);
+  --text: #0f172a;
+  --muted: #64748b;
+  --topbar: rgba(255, 255, 255, 0.88);
+  --dock: rgba(255, 255, 255, 0.94);
+  --input: rgba(248, 250, 252, 0.92);
+  --shadow: rgba(15, 23, 42, 0.09);
+}
+
+:root[data-theme="dark"] {
   color-scheme: dark;
   --background: #050914;
+  --background-soft: #040711;
   --surface: rgba(12, 20, 36, 0.82);
   --surface-soft: rgba(15, 23, 42, 0.62);
   --line: rgba(148, 163, 184, 0.14);
   --text: #e7edf8;
   --muted: #8795aa;
+  --topbar: rgba(5, 9, 20, 0.88);
+  --dock: rgba(9, 16, 30, 0.94);
+  --input: rgba(3, 8, 20, 0.74);
+  --shadow: rgba(0, 0, 0, 0.24);
 }
 
 * {
@@ -25,11 +45,19 @@ body {
   margin: 0;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.15), transparent 30%),
-    radial-gradient(circle at 92% 16%, rgba(99, 102, 241, 0.11), transparent 28%),
-    linear-gradient(180deg, #050914, #040711);
+    radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.08), transparent 30%),
+    radial-gradient(circle at 92% 16%, rgba(99, 102, 241, 0.06), transparent 28%),
+    linear-gradient(180deg, var(--background), var(--background-soft));
   color: var(--text);
   font-family: Inter, Arial, Helvetica, sans-serif;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.15), transparent 30%),
+    radial-gradient(circle at 92% 16%, rgba(99, 102, 241, 0.11), transparent 28%),
+    linear-gradient(180deg, var(--background), var(--background-soft));
 }
 
 [data-focus-layer-root] {
@@ -103,18 +131,18 @@ button {
   border: 1px solid var(--line);
   background: linear-gradient(
     145deg,
-    rgba(15, 23, 42, 0.78),
-    rgba(8, 15, 29, 0.8)
+    var(--surface),
+    var(--surface-soft)
   );
-  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 20px 70px var(--shadow);
   backdrop-filter: blur(20px);
 }
 
 .mether-input {
   width: 100%;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(3, 8, 20, 0.74);
-  color: #edf2fb;
+  border: 1px solid var(--line);
+  background: var(--input);
+  color: var(--text);
   outline: none;
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
@@ -161,12 +189,100 @@ button {
   width: 100%;
   border: 1px solid rgba(148, 163, 184, 0.13);
   border-radius: 14px;
-  background: rgba(2, 7, 18, 0.58);
+  background: var(--input);
   padding: 11px 13px;
-  color: rgb(241 245 249);
+  color: var(--text);
   font-size: 12px;
   outline: none;
   transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.mether-topbar {
+  border-color: var(--line);
+  background: var(--topbar);
+  box-shadow: 0 8px 30px var(--shadow);
+}
+
+.mether-dock,
+.mether-mobile-nav {
+  border-color: var(--line);
+  background: var(--dock);
+  box-shadow: 0 20px 60px var(--shadow);
+}
+
+.theme-toggle {
+  border-color: var(--line);
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.theme-toggle:hover {
+  border-color: rgba(59, 130, 246, 0.28);
+  color: rgb(37 99 235);
+}
+
+:root[data-theme="light"] .mether-surface [class~="text-white"],
+:root[data-theme="light"] .mether-topbar [class~="text-white"] {
+  color: rgb(15 23 42) !important;
+}
+
+:root[data-theme="light"] [class~="text-white"]:not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-red-"]):not([class*="bg-rose-"]):not([class*="bg-gradient-"]):not([class*="from-blue-"]) {
+  color: rgb(15 23 42) !important;
+}
+
+:root[data-theme="light"] .mether-surface [class*="bg-blue-"][class~="text-white"],
+:root[data-theme="light"] .mether-surface [class*="bg-gradient-"][class~="text-white"],
+:root[data-theme="light"] .mether-topbar [class*="bg-blue-"][class~="text-white"],
+:root[data-theme="light"] .mether-topbar [class*="bg-gradient-"][class~="text-white"] {
+  color: #ffffff !important;
+}
+
+:root[data-theme="light"] [class*="bg-blue-"][class~="text-white"],
+:root[data-theme="light"] [class*="bg-indigo-"][class~="text-white"],
+:root[data-theme="light"] [class*="bg-red-"][class~="text-white"],
+:root[data-theme="light"] [class*="bg-rose-"][class~="text-white"],
+:root[data-theme="light"] [class*="bg-gradient-"][class~="text-white"],
+:root[data-theme="light"] [class*="from-blue-"][class~="text-white"] {
+  color: #ffffff !important;
+}
+
+:root[data-theme="light"] .theme-dark-zone[class~="text-white"],
+:root[data-theme="light"] .theme-dark-zone [class~="text-white"] {
+  color: #ffffff !important;
+}
+
+:root[data-theme="light"] .mether-surface [class*="bg-black/"],
+:root[data-theme="light"] .mether-topbar [class*="bg-white/"],
+:root[data-theme="light"] .mether-dock [class*="hover:bg-white/"],
+:root[data-theme="light"] .mether-mobile-nav [class*="hover:bg-white/"] {
+  background-color: rgba(241, 245, 249, 0.78) !important;
+}
+
+:root[data-theme="light"] .mether-surface [class*="border-white/"],
+:root[data-theme="light"] .mether-topbar [class*="border-white/"],
+:root[data-theme="light"] .mether-dock [class*="border-white/"],
+:root[data-theme="light"] .mether-mobile-nav [class*="border-white/"] {
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+:root[data-theme="light"] .mether-surface [class*="text-slate-200"],
+:root[data-theme="light"] .mether-topbar [class*="text-slate-200"] {
+  color: rgb(30 41 59) !important;
+}
+
+:root[data-theme="light"] .mether-surface [class*="text-slate-300"],
+:root[data-theme="light"] .mether-surface [class*="text-slate-400"],
+:root[data-theme="light"] .mether-topbar [class*="text-slate-300"],
+:root[data-theme="light"] .mether-topbar [class*="text-slate-400"] {
+  color: rgb(71 85 105) !important;
+}
+
+:root[data-theme="light"] .mether-surface [class*="text-slate-500"],
+:root[data-theme="light"] .mether-surface [class*="text-slate-600"],
+:root[data-theme="light"] .mether-surface [class*="text-slate-700"],
+:root[data-theme="light"] .mether-topbar [class*="text-slate-500"],
+:root[data-theme="light"] .mether-topbar [class*="text-slate-600"] {
+  color: rgb(100 116 139) !important;
 }
 
 .workspace-input:focus {

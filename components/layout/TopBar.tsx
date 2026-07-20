@@ -3,6 +3,7 @@
 import { Bell, CalendarDays, LogOut } from "lucide-react";
 import type { AppUser } from "@/types/auth";
 import { formatLongDate } from "@/core/formatters/date";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 type TopBarProps = {
   user: AppUser;
@@ -13,7 +14,7 @@ export function TopBar({ user, onLogout }: TopBarProps) {
   const today = formatLongDate(new Date());
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#050914]/88 backdrop-blur-2xl">
+    <header className="mether-topbar sticky top-0 z-40 border-b backdrop-blur-2xl">
       <div className="mx-auto flex h-[62px] w-full max-w-[1540px] items-center justify-between gap-4 px-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-3">
           <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-blue-400/20 bg-[#080d19] shadow-[0_0_28px_rgba(59,130,246,.16)]">
@@ -35,6 +36,7 @@ export function TopBar({ user, onLogout }: TopBarProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <div className="hidden h-9 items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-slate-500 sm:flex">
             <CalendarDays size={14} />
             {today}

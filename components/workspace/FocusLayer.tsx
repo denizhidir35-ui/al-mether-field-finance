@@ -89,7 +89,7 @@ export function FocusLayer({ open, onClose, label, children, origin, originPrevi
       {origin && originPreview ? (
         <div
           aria-hidden="true"
-          className={`pointer-events-none fixed z-20 overflow-hidden rounded-xl border border-blue-400/25 bg-[#0b1427]/98 shadow-[0_12px_40px_rgba(37,99,235,.24)] transition-opacity duration-100 ${active ? "opacity-0" : "opacity-100"}`}
+          className={`theme-dark-zone pointer-events-none fixed z-20 overflow-hidden rounded-xl border border-blue-400/25 bg-[#0b1427]/98 shadow-[0_12px_40px_rgba(37,99,235,.24)] transition-opacity duration-100 ${active ? "opacity-0" : "opacity-100"}`}
           style={{ top: origin.top, left: origin.left, width: origin.width, height: origin.height }}
         >
           {originPreview}
